@@ -34,11 +34,7 @@ _LOGGER = logging.getLogger(__name__)
 # of entity platform types.
 # ----------------------------------------------------------------------------
 PLATFORMS: list[Platform] = [
-    Platform.BINARY_SENSOR,
     Platform.FAN,
-    Platform.LIGHT,
-    Platform.SENSOR,
-    Platform.SWITCH,
 ]
 
 type MyConfigEntry = ConfigEntry[RuntimeData]
