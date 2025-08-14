@@ -10,94 +10,20 @@ from typing import Any
 
 import requests
 
+from .const import CYPHER_DEVICE_ID, PUSH_NOTIFICATION_PLATFORM, PUSH_NOTIFICATION_TOKEN, BASE_URL, API_LOGIN_URL, \
+    API_LOGIN_HEADERS
+from .managers.api_key_manager import retrieve_api_key
+from .managers.token_manager import TokenManager
+from .models.requests.request_login_model import RequestLoginModel
+from .models.responses.response_user_model import ResponseUserModel
+
 _LOGGER = logging.getLogger(__name__)
+
+tokenManager = TokenManager(ref="MainTokenManager")
 
 MOCK_DATA = [
     {
         "device_id": 1,
-        "device_type": "SOCKET",
-        "device_name": "Lounge Socket 1",
-        "device_uid": "0123-4567-8910-1112",
-        "software_version": "2.13",
-        "state": "ON",
-        "voltage": 239,
-        "current": 1.2,
-        "energy_delivered": 3247,
-        "last_reboot": "2024-01-01T10:04:23Z",
-    },
-    {
-        "device_id": 2,
-        "device_type": "SOCKET",
-        "device_name": "Lounge Socket 2",
-        "device_uid": "0123-4567-8910-3723",
-        "software_version": "2.13",
-        "state": "ON",
-        "voltage": 237,
-        "current": 0.1,
-        "energy_delivered": 634,
-        "last_reboot": "2024-03-12T17:33:01Z",
-    },
-    {
-        "device_id": 3,
-        "device_type": "ON_OFF_LIGHT",
-        "device_name": "Lounge Light",
-        "device_uid": "0123-4567-8910-4621",
-        "software_version": "1.30",
-        "state": "ON",
-        "voltage": 237,
-        "current": 0.2,
-        "off_timer": "00:00",
-        "last_reboot": "2023-11-11T09:03:01Z",
-    },
-    {
-        "device_id": 4,
-        "device_type": "DIMMABLE_LIGHT",
-        "device_name": "Kitchen Light",
-        "device_uid": "0123-4967-8940-4691",
-        "software_version": "1.35",
-        "state": "ON",
-        "brightness": 85,
-        "voltage": 237,
-        "current": 1.275,
-        "off_timer": "00:00",
-        "last_reboot": "2023-11-11T09:03:01Z",
-    },
-    {
-        "device_id": 5,
-        "device_type": "TEMP_SENSOR",
-        "device_name": "Kitchen Temp Sensor",
-        "device_uid": "0123-4567-8910-9254",
-        "software_version": "3.00",
-        "temperature": 18.3,
-        "last_reboot": "2024-05-02T19:46:00Z",
-    },
-    {
-        "device_id": 6,
-        "device_type": "TEMP_SENSOR",
-        "device_name": "Lounge Temp Sensor",
-        "device_uid": "0123-4567-8910-9255",
-        "software_version": "1.30",
-        "temperature": 19.2,
-        "last_reboot": "2024-03-12T17:33:01Z",
-    },
-    {
-        "device_id": 7,
-        "device_type": "CONTACT_SENSOR",
-        "device_name": "Kitchen Door Sensor",
-        "device_uid": "0123-4567-8911-6295",
-        "software_version": "1.41",
-        "state": "OPEN",
-    },
-    {
-        "device_id": 8,
-        "device_type": "CONTACT_SENSOR",
-        "device_name": "Lounge Door Sensor",
-        "device_uid": "0123-4567-8911-1753",
-        "software_version": "1.41",
-        "state": "CLOSED",
-    },
-    {
-        "device_id": 9,
         "device_type": "FAN",
         "device_name": "Lounge Fan",
         "device_uid": "0123-4599-1541-1793",
@@ -123,8 +49,47 @@ class API:
         self.mock_data = deepcopy(MOCK_DATA)
 
         # Mock auth error if user != test and pwd != 1234
-        if mock and (self.user != "test" or self.pwd != "1234"):
-            raise APIAuthError("Invalid credentials!")
+        # if mock and (self.user != "test" or self.pwd != "1234"):
+            # raise APIAuthError("Invalid credentials!")
+
+    def execute_login(self):
+        """Execute login."""
+        try:
+
+            # Encrypt the password using the TokenManager class
+            password = tokenManager.encrypt_text(self.pwd)
+
+            # Create the request model, and we log it for debug purposes
+            login_request = RequestLoginModel(CYPHER_DEVICE_ID, PUSH_NOTIFICATION_PLATFORM, password, PUSH_NOTIFICATION_TOKEN, self.user)
+            _LOGGER.debug(login_request.to_json())
+
+            # Retrieve the authorization that needs to use in the headers
+            authorization = retrieve_api_key(None)
+
+            # Create the headers obj that will be used in the request
+            headers_to_use = {
+                **API_LOGIN_HEADERS,
+                "Authorization": authorization
+            }
+
+            # Log the request
+            _LOGGER.debug("*** LOGIN REQUEST ***")
+            _LOGGER.debug(login_request.to_json())
+
+            # Execute the request
+            r = requests.post(API_LOGIN_URL, headers=headers_to_use, json=login_request.to_json(), timeout=10)
+
+            # Parse the response in ResponseUserModel
+            _LOGGER.debug(r.json())
+            response_parsed = ResponseUserModel.from_json(r.json())
+
+            # Log the response
+            _LOGGER.debug("*** LOGIN RESPONSE ***")
+            _LOGGER.debug(response_parsed.to_json())
+
+        except Exception as e:
+            _LOGGER.debug("Error on Login request: %s", e)
+            raise APIConnectionError("Exception on Login request") from e
 
     def get_data(self) -> list[dict[str, Any]]:
         """Get api data."""
@@ -183,34 +148,6 @@ class API:
         else:
             # Parameter does not exist on device
             return False
-
-        # For sockets and lights, modify current values when off/on to mimic
-        # real api and show changing sensors from your actions.
-        if device["device_type"] in ["SOCKET", "ON_OFF_LIGHT", "DIMMABLE_LIGHT"]:
-            if value == "OFF":
-                device["current"] = 0
-            else:
-                original_device = [
-                    devices
-                    for devices in MOCK_DATA
-                    if devices.get("device_id") == device_id
-                ][0]
-                device["current"] = original_device.get("current")
-
-        # For dimmable lights if brightness is set to > 0, set to on
-        if device["device_type"] == "DIMMABLE_LIGHT":
-            if parameter == "brightness":
-                if value > 0:
-                    device["state"] = "ON"
-                    device["current"] = value * 0.015
-                else:
-                    device["state"] = "OFF"
-
-            if parameter == "state":
-                if value == "ON":
-                    device["brightness"] = 100
-                else:
-                    device["brightness"] = 0
 
         _LOGGER.debug("Device Updated: %s", device)
 
