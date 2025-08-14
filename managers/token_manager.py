@@ -5,7 +5,7 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.backends import default_backend
 
-from msp_integration_101_intermediate.const import CYPHER_SALT, CYPHER_DEVICE_ID
+from ..const import CYPHER_SALT, CYPHER_DEVICE_ID
 
 
 class GlobalTokenRepository:

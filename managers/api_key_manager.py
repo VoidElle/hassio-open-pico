@@ -1,6 +1,6 @@
 import base64
 
-from msp_integration_101_intermediate.const import API_KEY_FALLBACK_EMAIL, API_KEY_PASSWORD
+from ..const import API_KEY_FALLBACK_EMAIL, API_KEY_PASSWORD
 
 # Function to retrieve the Api key that will be sent in the headers
 def retrieve_api_key(email: str | None = None) -> str:

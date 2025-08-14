@@ -11,10 +11,6 @@ RESPONSE_SERVICE_NAME = "response_service"
 SET_OFF_TIMER_ENTITY_SERVICE_NAME = "set_off_timer"
 CONF_OFF_TIME = "off_time"
 
-# Hosting data
-HOST = "proair.azurewebsites.net"
-BASE_URL = f"https://{HOST}/"
-
 # Api key consts
 API_KEY_FALLBACK_EMAIL = "UsrProAir"
 API_KEY_PASSWORD = "PwdProAir"
@@ -48,3 +44,21 @@ RESULT_WIFI = 1234
 # Cypher
 CYPHER_SALT = "ns91wr48"
 CYPHER_DEVICE_ID = "c610101212ff9aec"
+
+# Base API constants
+HOST = "proair.azurewebsites.net"
+BASE_URL = f"https://{HOST}/"
+
+# Specific endpoints
+API_LOGIN_URL = f"https://{HOST}/apiTS/v2/Login"
+
+# Specific headers
+API_LOGIN_HEADERS = {
+    'Accept-Encoding': 'gzip',
+    'Connection': 'Keep-Alive',
+    'Content-Length': '284',
+    'Content-Type': 'application/json',
+    'Host': HOST,
+    'Token': STARTING_TOKEN,
+    'User-Agent': USER_AGENT,
+}

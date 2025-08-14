@@ -89,6 +89,7 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
         # ----------------------------------------------------------------------------
         api = API(data[CONF_HOST], data[CONF_USERNAME], data[CONF_PASSWORD], mock=True)
         await hass.async_add_executor_job(api.get_data)
+        await hass.async_add_executor_job(api.execute_login)
     except APIAuthError as err:
         raise InvalidAuth from err
     except APIConnectionError as err:
