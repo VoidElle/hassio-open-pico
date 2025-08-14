@@ -51,7 +51,20 @@ class ExampleFan(ExampleBaseEntity, FanEntity):
     _mode_parameter = "mode"  # The device API parameter for mode
 
     # Define available modes
-    _attr_preset_modes = ["Normal", "Eco", "Turbo"]
+    _attr_preset_modes = [
+        "Heat recovery",
+        "Extraction",
+        "Immission",
+        "Humidity - Recovery",
+        "Humidity - Extraction",
+        "Humidity CO2 - Recovery",
+        "Humidity CO2 - Extraction",
+        "Comfort winter",
+        "Comfort summer",
+        "Natural ventilation",
+        "CO2 - Recovery",
+        "CO2 - Extraction"
+    ]
 
     @property
     def is_on(self) -> bool | None:
