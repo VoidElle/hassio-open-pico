@@ -78,7 +78,6 @@ class RequestLoginModel:
     def copy_with(self, **kwargs) -> 'RequestLoginModel':
         """
         Create a new instance with some fields replaced.
-        Similar to Dart's copyWith method.
 
         Args:
             **kwargs: Fields to update
