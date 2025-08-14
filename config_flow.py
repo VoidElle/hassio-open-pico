@@ -45,7 +45,6 @@ _LOGGER = logging.getLogger(__name__)
 # ----------------------------------------------------------------------------
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
-        vol.Required(CONF_HOST, description={"suggested_value": "10.10.10.1"}): str,
         vol.Required(CONF_USERNAME, description={"suggested_value": "test"}): str,
         vol.Required(CONF_PASSWORD, description={"suggested_value": "1234"}): str,
     }
@@ -87,14 +86,14 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
         # If you cannot connect, raise CannotConnect
         # If the authentication is wrong, raise InvalidAuth
         # ----------------------------------------------------------------------------
-        api = API(data[CONF_HOST], data[CONF_USERNAME], data[CONF_PASSWORD], mock=True)
+        api = API(data[CONF_USERNAME], data[CONF_PASSWORD], mock=True)
         await hass.async_add_executor_job(api.get_data)
         await hass.async_add_executor_job(api.execute_login)
     except APIAuthError as err:
         raise InvalidAuth from err
     except APIConnectionError as err:
         raise CannotConnect from err
-    return {"title": f"Example Integration - {data[CONF_HOST]}"}
+    return {"title": f"Example Integration - {data[CONF_USERNAME]}"}
 
 
 async def validate_settings(hass: HomeAssistant, data: dict[str, Any]) -> bool:

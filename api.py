@@ -38,9 +38,9 @@ MOCK_DATA = [
 class API:
     """Class for example API."""
 
-    def __init__(self, host: str, user: str, pwd: str, mock: bool = False) -> None:
+    def __init__(self, user: str, pwd: str, mock: bool = False) -> None:
         """Initialise."""
-        self.host = host
+        self.host = "1.1.1.1"
         self.user = user
         self.pwd = pwd
 
@@ -79,13 +79,18 @@ class API:
             # Execute the request
             r = requests.post(API_LOGIN_URL, headers=headers_to_use, json=login_request.to_json(), timeout=10)
 
-            # Parse the response in ResponseUserModel
+            # Log the response not parsed
+            _LOGGER.debug("*** LOGIN RESPONSE NOT PARSED ***")
             _LOGGER.debug(r.json())
+
+            # Parse the response in the DTO
             response_parsed = ResponseUserModel.from_json(r.json())
 
-            # Log the response
-            _LOGGER.debug("*** LOGIN RESPONSE ***")
+            # Log the response parsed
+            _LOGGER.debug("*** LOGIN RESPONSE PARSED ***")
             _LOGGER.debug(response_parsed.to_json())
+
+            return response_parsed
 
         except Exception as e:
             _LOGGER.debug("Error on Login request: %s", e)
