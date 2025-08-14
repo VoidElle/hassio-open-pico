@@ -1,8 +1,8 @@
 {
-  "domain": "msp_integration_101_intermediate",
-  "name": "MSP Integration 101 Intermediate Example",
+  "domain": "open_pico_integration",
+  "name": "Open Pico integration (Tecnosystemi)",
   "codeowners": [
-    "@msp1974"
+    "@VoidElle"
   ],
   "config_flow": true,
   "dependencies": [],
