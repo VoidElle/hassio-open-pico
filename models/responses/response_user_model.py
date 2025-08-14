@@ -1,6 +1,8 @@
 from dataclasses import dataclass
-from typing import Dict, Any
+from typing import Dict, Any, List
 import json
+
+from ..common.common_plant_model import CommonPlantModel
 
 
 @dataclass(frozen=True)
@@ -10,10 +12,12 @@ class ResponseUserModel:
         res_code: Response code indicating status
         id: Id of the user
         token: The current session token (Needs to get worked to use in the next request)
+        plants: The list of plants the user has
     """
     res_code: int
     id: int
     token: str
+    plants: List[CommonPlantModel]
 
     @classmethod
     def from_json(cls, json_data: Dict[str, Any]) -> 'ResponseUserModel':
@@ -29,7 +33,8 @@ class ResponseUserModel:
         return cls(
             res_code=json_data['ResCode'],
             id=json_data['ID'],
-            token=json_data['Token']
+            token=json_data['Token'],
+            plants=[CommonPlantModel.from_json(d) for d in json_data.get("ListPlants", [])]
         )
 
     def to_json(self) -> Dict[str, Any]:
@@ -42,7 +47,8 @@ class ResponseUserModel:
         return {
             'ResCode': self.res_code,
             'ID': self.id,
-            'Token': self.token
+            'Token': self.token,
+            'ListPlants': [d.to_json() for d in self.plants]
         }
 
     @classmethod
@@ -70,7 +76,6 @@ class ResponseUserModel:
     def copy_with(self, **kwargs) -> 'ResponseUserModel':
         """
         Create a new instance with some fields replaced.
-        Similar to Dart's copyWith method.
 
         Args:
             **kwargs: Fields to update (res_code, res_descr)
@@ -81,7 +86,8 @@ class ResponseUserModel:
         current_values = {
             'res_code': self.res_code,
             'id': self.id,
-            'token': self.token
+            'token': self.token,
+            'plants': self.plants
         }
         current_values.update(kwargs)
         return ResponseUserModel(**current_values)
