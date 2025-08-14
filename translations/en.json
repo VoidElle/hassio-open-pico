@@ -14,7 +14,7 @@
     },
     "step": {
       "user": {
-        "title": "Multi Step Config - Step 1",
+        "title": "Login into Tecnosystemi API",
         "data": {
           "host": "Host",
           "password": "Password",
