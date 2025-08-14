@@ -1,6 +1,6 @@
 """Constants for our integration."""
 
-DOMAIN = "msp_integration_101_intermediate"
+DOMAIN = "open_pico_integration"
 
 DEFAULT_SCAN_INTERVAL = 60
 MIN_SCAN_INTERVAL = 10

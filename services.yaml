@@ -42,7 +42,7 @@ set_off_timer:
   decription: Set an off timer for a light
   target:
     entity:
-      integration: msp_integration_101_intermediate
+      integration: open_pico_integration
       domain:
         - light
   fields:
