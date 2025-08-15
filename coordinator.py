@@ -6,7 +6,6 @@ from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
-    CONF_HOST,
     CONF_PASSWORD,
     CONF_SCAN_INTERVAL,
     CONF_USERNAME,
@@ -14,7 +13,7 @@ from homeassistant.const import (
 from homeassistant.core import DOMAIN, HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .api import API, APIConnectionError
+from .api import API, APIConnectionError, DEVICES_LIST
 from .const import DEFAULT_SCAN_INTERVAL
 
 _LOGGER = logging.getLogger(__name__)
@@ -28,8 +27,6 @@ class ExampleCoordinator(DataUpdateCoordinator):
     def __init__(self, hass: HomeAssistant, config_entry: ConfigEntry) -> None:
         """Initialize coordinator."""
 
-        # Set variables from values entered in config flow setup
-        self.host = config_entry.data[CONF_HOST]
         self.user = config_entry.data[CONF_USERNAME]
         self.pwd = config_entry.data[CONF_PASSWORD]
 
@@ -52,7 +49,7 @@ class ExampleCoordinator(DataUpdateCoordinator):
         )
 
         # Initialise your api here and make available to your integration.
-        self.api = API(host=self.host, user=self.user, pwd=self.pwd, mock=True)
+        self.api = API(user=self.user, pwd=self.pwd, mock=True)
 
     async def async_update_data(self):
         """Fetch data from API endpoint.
@@ -65,7 +62,9 @@ class ExampleCoordinator(DataUpdateCoordinator):
             # Get the data from your api
             # NOTE: Change this to use a real api call for data
             # ----------------------------------------------------------------------------
-            data = await self.hass.async_add_executor_job(self.api.get_data)
+            # data = await self.hass.async_add_executor_job(self.api.get_data)
+            data = DEVICES_LIST
+            _LOGGER.debug("DEVICES LIST: %s", DEVICES_LIST)
         except APIConnectionError as err:
             _LOGGER.error(err)
             raise UpdateFailed(err) from err
