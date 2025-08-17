@@ -10,13 +10,14 @@ from typing import Any, Dict
 import requests
 from homeassistant.core import HomeAssistant
 
-from .const import EXECUTE_COMMANDS_HEADERS
+from .models.common.common_device_details_model import CommonDeviceDetailsModel
 from .models.requests.request_command_model import RequestCommandModel
 from .models.common.common_plant_model import CommonPlantModel
 from .models.responses.response_common_wrapper import ResponseCommonResponseWrapper
 from .models.common.common_device_model import CommonDeviceModel
 from .const import CYPHER_DEVICE_ID, PUSH_NOTIFICATION_PLATFORM, PUSH_NOTIFICATION_TOKEN, API_LOGIN_URL, \
-    API_LOGIN_HEADERS, GET_DEVICES_HEADERS, API_GET_PLANTS_URL, API_SEND_PICO_CMD
+    API_LOGIN_HEADERS, GET_DEVICES_HEADERS, API_GET_PLANTS_URL, API_SEND_PICO_CMD, API_GET_PICO_DETAILS, \
+    EXECUTE_COMMANDS_HEADERS
 from .managers.api_key_manager import retrieve_api_key
 from .managers.token_manager import TokenManager, GlobalTokenRepository
 from .models.requests.request_login_model import RequestLoginModel
@@ -228,9 +229,70 @@ class API:
             raise APIConnectionError("Exception on ExecuteCommands request") from err
 
     # Function to retrieve the details of a specific device
-    def get_device_details(self, device_serial: str, device_pin: str):
-        return
-        # TODO
+    def get_device_details(self, device_serial: str, device_pin: str) -> CommonDeviceDetailsModel:
+        try:
+
+            # Retrieve the new token to use
+            token_to_use = tokenManager.retrieve_new_token()
+
+            # Retrieve the email of the user
+            email = self.user
+
+            # Retrieve the new authorization to use
+            authorization = retrieve_api_key(email)
+
+            # Create the headers obj that will be used in the request
+            headers_to_use = {
+                **GET_DEVICES_HEADERS,
+                "Authorization": authorization,
+                "Token": token_to_use
+            }
+
+            # Create the parameters obj that will be used in the request
+            params_to_use = {
+                "picoSerial": device_serial,
+                "PIN": device_pin,
+            }
+
+            # Log the request
+            _LOGGER.debug("*** GET PICO DETAILS HEADERS ***")
+            _LOGGER.debug(headers_to_use)
+
+            # Log the request
+            _LOGGER.debug("*** GET PICO DETAILS PARAMETERS ***")
+            _LOGGER.debug(params_to_use)
+
+            # Execute the request
+            r = requests.get(API_GET_PICO_DETAILS, headers=headers_to_use, params=params_to_use, timeout=10)
+
+            # Log the response
+            _LOGGER.debug("*** GET PICO DETAILS RESPONSE ***")
+            _LOGGER.debug(r.json())
+
+            # Parse the response in the response DTO
+            response_parsed = ResponseCommonResponseWrapper.from_json(r.json())
+
+            # Parse the ResDescr field in JSON
+            obj_to_parse = json.loads(response_parsed.res_descr)
+            obj_to_parse["Serial"] = device_serial
+
+            device_details_model = CommonDeviceDetailsModel.from_json(obj_to_parse)
+
+            return device_details_model
+
+        # Timeout error handling
+        except requests.exceptions.ConnectTimeout as err:
+            _LOGGER.error("Timeout connecting to api", err)
+            raise APIConnectionError("Timeout connecting to api") from err
+
+        # Passing the exception to caller
+        except APIUnauthorizedError as err:
+            raise APIUnauthorizedError("Unauthorized") from err
+
+        # Default error handling
+        except Exception as err:
+            _LOGGER.debug("Error on GetDeviceDetails request: %s", err)
+            raise APIConnectionError("Exception on GetDeviceDetails request") from err
 
 class APIAuthError(Exception):
     """Exception class for auth error."""

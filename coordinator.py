@@ -79,6 +79,19 @@ class ExampleCoordinator(DataUpdateCoordinator):
                 # Retrieve the new devices status from the API
                 new_data_to_parse = await self.hass.async_add_executor_job(self.api.get_updated_devices_statuses)
 
+                # For every retrieved device, we need to retrieve its details
+                for device in new_data_to_parse:
+
+                    # Retrieve the details of the current device
+                    device_details = await self.hass.async_add_executor_job(self.api.get_device_details, device.serial, self.pin)
+
+                    # We log the retrieved device's details
+                    _LOGGER.debug(f"{device.serial} - DETAILS")
+                    _LOGGER.debug(device_details.to_json())
+
+                    # We set the device details inside the device DTO for future usage
+                    device.details = device_details
+
                 # Log the devices not parsed in a readable way for Home Assistant
                 _LOGGER.debug("NEW DATA - NOT PARSED")
                 _LOGGER.debug(new_data_to_parse)
