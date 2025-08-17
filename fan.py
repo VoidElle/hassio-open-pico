@@ -1,5 +1,5 @@
 """Fan setup for our Integration."""
-
+import json
 import logging
 from typing import Any
 
@@ -7,6 +7,7 @@ from homeassistant.components.fan import FanEntity, FanEntityFeature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
+from .utils.device_commands import get_on_off_command
 from .const import PRESET_MODES
 from . import MyConfigEntry
 from .base import ExampleBaseEntity
@@ -82,8 +83,16 @@ class ExampleFan(ExampleBaseEntity, FanEntity):
 
     async def async_turn_on(self, percentage: int | None = None, preset_mode: str | None = None, **kwargs):
         """Turn on the fan."""
+
+        device_name = self.device.get("device_name")
+        device_serial = self.device.get("device_uid")
+        device_pin = "XXXX"
+
+        command_to_send_to_parse = get_on_off_command(True, device_pin)
+        command_to_send_parsed = json.dumps(command_to_send_to_parse)
+
         await self.hass.async_add_executor_job(
-            self.coordinator.api.set_data, self.device_id, self.parameter, "ON"
+            self.coordinator.api.execute_command, device_name, device_serial, device_pin, command_to_send_parsed
         )
 
         # If a preset mode is specified, set it
@@ -98,7 +107,16 @@ class ExampleFan(ExampleBaseEntity, FanEntity):
         await self.coordinator.async_refresh()
 
     async def async_turn_off(self, **kwargs):
+
+        device_name = self.device.get("device_name")
+        device_serial = self.device.get("device_uid")
+        device_pin = "XXXX"
+
+        command_to_send_to_parse = get_on_off_command(False, device_pin)
+        command_to_send_parsed = json.dumps(command_to_send_to_parse)
+
         await self.hass.async_add_executor_job(
-            self.coordinator.api.set_data, self.device_id, self.parameter, "OFF"
+            self.coordinator.api.execute_command, device_name, device_serial, device_pin, command_to_send_parsed
         )
+
         await self.coordinator.async_refresh()

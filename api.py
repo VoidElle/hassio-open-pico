@@ -1,6 +1,6 @@
 """API Placeholder.
 
-You should create your api seperately and have it hosted on PYPI.  This is included here for the sole purpose
+You should create your api separately and have it hosted on PYPI.  This is included here for the sole purpose
 of making this example code executable.
 """
 import json
@@ -10,11 +10,13 @@ from typing import Any, Dict
 import requests
 from homeassistant.core import HomeAssistant
 
+from .const import EXECUTE_COMMANDS_HEADERS
+from .models.requests.request_command_model import RequestCommandModel
 from .models.common.common_plant_model import CommonPlantModel
 from .models.responses.response_common_wrapper import ResponseCommonResponseWrapper
 from .models.common.common_device_model import CommonDeviceModel
 from .const import CYPHER_DEVICE_ID, PUSH_NOTIFICATION_PLATFORM, PUSH_NOTIFICATION_TOKEN, API_LOGIN_URL, \
-    API_LOGIN_HEADERS, GET_DEVICES_HEADERS, API_GET_PLANTS_URL
+    API_LOGIN_HEADERS, GET_DEVICES_HEADERS, API_GET_PLANTS_URL, API_SEND_PICO_CMD
 from .managers.api_key_manager import retrieve_api_key
 from .managers.token_manager import TokenManager, GlobalTokenRepository
 from .models.requests.request_login_model import RequestLoginModel
@@ -156,13 +158,73 @@ class API:
             _LOGGER.debug("Error on GetDevices request: %s", err)
             raise APIConnectionError("Exception on GetDevices request") from err
 
-    def get_data(self) -> list[dict[str, Any]]:
-        """Get api data."""
+    def execute_command(self, device_name: str, device_serial: str, device_pin: str, command_to_send: dict[str, str]):
+
         try:
-            r = requests.get(f"http://{self.host}/api", timeout=10)
-            return r.json()
+
+            # Retrieve the new token to use
+            token_to_use = tokenManager.retrieve_new_token()
+
+            # Retrieve the email of the user
+            email = self.user
+
+            # Retrieve the new authorization to use
+            authorization = retrieve_api_key(email)
+
+            # Create the headers obj that will be used in the request
+            headers_to_use = {
+                **EXECUTE_COMMANDS_HEADERS,
+                "Authorization": authorization,
+                "Token": token_to_use
+            }
+
+            # Create the parameters obj that will be used in the request
+            params_to_use = {
+                "picoSerial": device_serial,
+                "PIN": device_pin,
+            }
+
+            # Create the body obj that will be used in the request
+            body_to_use = (RequestCommandModel(
+                command=command_to_send,
+                device_name=device_name,
+                pin=device_pin,
+                serial=device_serial
+            ).to_json_string())
+
+            # Log the response
+            _LOGGER.debug("*** EXECUTE COMMANDS REQUEST HEADERS ***")
+            _LOGGER.debug(headers_to_use)
+
+            # Log the response
+            _LOGGER.debug("*** EXECUTE COMMANDS REQUEST PARAMETERS ***")
+            _LOGGER.debug(params_to_use)
+
+            # Log the response
+            _LOGGER.debug("*** EXECUTE COMMANDS REQUEST BODY ***")
+            _LOGGER.debug(body_to_use)
+
+            # Execute the request
+            r = requests.post(API_SEND_PICO_CMD, headers=headers_to_use, params=params_to_use, data=body_to_use, timeout=10)
+
+            # Log the response
+            _LOGGER.debug("*** EXECUTE COMMANDS RESPONSE ***")
+            _LOGGER.debug(r.json())
+            _LOGGER.debug(r.url)
+
+        # Timeout error handling
         except requests.exceptions.ConnectTimeout as err:
+            _LOGGER.error("Timeout connecting to api", err)
             raise APIConnectionError("Timeout connecting to api") from err
+
+        # Passing the exception to caller
+        except APIUnauthorizedError as err:
+            raise APIUnauthorizedError("Unauthorized") from err
+
+        # Default error handling
+        except Exception as err:
+            _LOGGER.debug("Error on ExecuteCommands request: %s", err)
+            raise APIConnectionError("Exception on ExecuteCommands request") from err
 
     def set_data(self, device_id: int, parameter: str, value: Any) -> bool:
         """Set api data."""

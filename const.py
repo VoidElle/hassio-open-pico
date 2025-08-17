@@ -52,6 +52,7 @@ BASE_URL = f"https://{HOST}/"
 # Specific endpoints
 API_LOGIN_URL = f"https://{HOST}/apiTS/v2/Login"
 API_GET_PLANTS_URL = f"https://{HOST}/api/v1/GetPlants"
+API_SEND_PICO_CMD = f"https://{HOST}/api/v1/SendPicoCmd"
 
 # Specific headers
 API_LOGIN_HEADERS = {
@@ -71,6 +72,15 @@ GET_DEVICES_HEADERS = {
     'Host': HOST,
     'User-Agent': USER_AGENT,
     'UserObj-Agent': USER_AGENT_OBJ
+}
+
+EXECUTE_COMMANDS_HEADERS = {
+    'Accept-Encoding': 'gzip',
+    'Connection': 'Keep-Alive',
+    'Content-Type': 'application/json',
+    'Content-Length': '150',
+    'Host': HOST,
+    'User-Agent': USER_AGENT,
 }
 
 # Preset modes
