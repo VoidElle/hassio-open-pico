@@ -24,8 +24,6 @@ _LOGGER = logging.getLogger(__name__)
 
 tokenManager = TokenManager(ref="MainTokenManager")
 
-DEVICES_LIST = []
-
 class API:
     """Class for example API."""
 
@@ -80,23 +78,6 @@ class API:
             # Log the response parsed
             _LOGGER.debug("*** LOGIN RESPONSE PARSED ***")
             _LOGGER.debug(response_parsed.to_json())
-
-            # Clear the devices list to avoid duplicates
-            DEVICES_LIST.clear()
-
-            # For every device in the user's devices list
-            # We append it into the devices list
-            for plant in response_parsed.plants:
-                for device in plant.devices:
-                    DEVICES_LIST.append({
-                        "device_id": device.id,
-                        "device_type": "FAN",
-                        "device_name": device.name,
-                        "device_uid": device.serial,
-                        "software_version": "2.11",
-                        "state": "OFF" if device.is_off else "ON",
-                        "mode": ""
-                    })
 
             return response_parsed
 

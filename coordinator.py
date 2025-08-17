@@ -16,7 +16,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from .utils.parsers import parse_common_device_into_readable_obj
 from .api import APIUnauthorizedError
 from .managers.token_manager import GlobalTokenRepository
-from .api import API, APIConnectionError, DEVICES_LIST
+from .api import API, APIConnectionError
 from .const import DEFAULT_SCAN_INTERVAL
 
 _LOGGER = logging.getLogger(__name__)
@@ -106,9 +106,6 @@ class ExampleCoordinator(DataUpdateCoordinator):
             except Exception as err:
                 _LOGGER.debug("Error on Login request: %s", err)
                 raise UpdateFailed(err) from err
-
-            # Log the devices list
-            _LOGGER.debug("DEVICES LIST: %s", DEVICES_LIST)
 
         except APIConnectionError as err:
             _LOGGER.error(err)
