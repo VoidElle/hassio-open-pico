@@ -51,6 +51,7 @@ BASE_URL = f"https://{HOST}/"
 
 # Specific endpoints
 API_LOGIN_URL = f"https://{HOST}/apiTS/v2/Login"
+API_GET_PLANTS_URL = f"https://{HOST}/api/v1/GetPlants"
 
 # Specific headers
 API_LOGIN_HEADERS = {
@@ -61,4 +62,13 @@ API_LOGIN_HEADERS = {
     'Host': HOST,
     'Token': STARTING_TOKEN,
     'User-Agent': USER_AGENT,
+}
+
+GET_DEVICES_HEADERS = {
+    'Accept-Encoding': 'gzip',
+    'Connection': 'Keep-Alive',
+    'Content-Type': 'application/json',
+    'Host': HOST,
+    'User-Agent': USER_AGENT,
+    'UserObj-Agent': USER_AGENT_OBJ
 }

@@ -49,7 +49,7 @@ class ExampleCoordinator(DataUpdateCoordinator):
         )
 
         # Initialise your api here and make available to your integration.
-        self.api = API(user=self.user, pwd=self.pwd, mock=True)
+        self.api = API(hass=hass, user=self.user, pwd=self.pwd, mock=True)
 
     async def async_update_data(self):
         """Fetch data from API endpoint.
@@ -64,6 +64,7 @@ class ExampleCoordinator(DataUpdateCoordinator):
             # ----------------------------------------------------------------------------
             # data = await self.hass.async_add_executor_job(self.api.get_data)
             data = DEVICES_LIST
+            await self.api.get_updated_devices_statuses()
             _LOGGER.debug("DEVICES LIST: %s", DEVICES_LIST)
         except APIConnectionError as err:
             _LOGGER.error(err)

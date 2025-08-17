@@ -1,12 +1,14 @@
 import base64
 import hashlib
+import logging
 from typing import Optional
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.backends import default_backend
 
-from ..const import CYPHER_SALT, CYPHER_DEVICE_ID
+from ..const import CYPHER_SALT, CYPHER_DEVICE_ID, STARTING_TOKEN
 
+_LOGGER = logging.getLogger(__name__)
 
 class GlobalTokenRepository:
     """Simple token repository"""
@@ -52,7 +54,7 @@ class TokenManager:
             return base64.b64encode(encrypted).decode('utf-8')
 
         except Exception as e:
-            print(f"Error encrypting text: {e}")
+            _LOGGER.error(f"Error encrypting text: {e}")
             raise
 
     def decrypt_text(self, base64_text: str) -> str:
@@ -80,7 +82,7 @@ class TokenManager:
             return plain_text.decode('utf-8')
 
         except Exception as e:
-            print(f"Error decrypting text: {e}")
+            _LOGGER.error(f"Error decrypting text: {e}")
             raise
 
     def retrieve_new_token(self) -> Optional[str]:
@@ -94,7 +96,7 @@ class TokenManager:
             try:
                 decrypted_token = self.decrypt_text(old_token)
             except Exception as e:
-                print(f'Error decrypting token: {e}')
+                _LOGGER.error(f'Error decrypting token: {e}')
                 return None
 
             split_token = decrypted_token.split("_")
@@ -109,11 +111,10 @@ class TokenManager:
                     # Remove carriage returns and newlines
                     new_token = new_token.replace("\r", "").replace("\n", "")
 
-                    # For debugging - you can remove this later
-                    print(f'Old token: {old_token}')
-                    print(f'Decrypted: {decrypted_token}')
-                    print(f'New token plain: {new_token_plain}')
-                    print(f'New token encrypted: {new_token}')
+                    _LOGGER.debug(f'Old token: {old_token}')
+                    _LOGGER.debug(f'Decrypted: {decrypted_token}')
+                    _LOGGER.debug(f'New token plain: {new_token_plain}')
+                    _LOGGER.debug(f'New token encrypted: {new_token}')
 
                     # Set the new token
                     GlobalTokenRepository.token = new_token
@@ -121,9 +122,9 @@ class TokenManager:
                     return new_token
 
                 except Exception as e:
-                    print(f'Error parsing or encrypting: {e}')
+                    _LOGGER.error(f'Error parsing or encrypting: {e}')
 
         except Exception as e:
-            print(f'General error in retrieve_new_token: {e}')
+            _LOGGER.error(f'General error in retrieve_new_token: {e}')
 
         return None
