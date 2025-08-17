@@ -93,7 +93,7 @@ class API:
             _LOGGER.debug("Error on Login request: %s", e)
             raise APIConnectionError("Exception on Login request") from e
 
-    # Function to get the list of the devices associated with the user's token
+    # Function to get the list of the devices of the user
     def get_updated_devices_statuses(self) -> list[CommonDeviceModel]:
         try:
 
@@ -158,6 +158,7 @@ class API:
             _LOGGER.debug("Error on GetDevices request: %s", err)
             raise APIConnectionError("Exception on GetDevices request") from err
 
+    # Function to execute a command on a specific device
     def execute_command(self, device_name: str, device_serial: str, device_pin: str, command_to_send: dict[str, str]):
 
         try:
@@ -225,6 +226,11 @@ class API:
         except Exception as err:
             _LOGGER.debug("Error on ExecuteCommands request: %s", err)
             raise APIConnectionError("Exception on ExecuteCommands request") from err
+
+    # Function to retrieve the details of a specific device
+    def get_device_details(self, device_serial: str, device_pin: str):
+        return
+        # TODO
 
 class APIAuthError(Exception):
     """Exception class for auth error."""
