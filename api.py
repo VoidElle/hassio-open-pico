@@ -95,6 +95,7 @@ class API:
                         "device_uid": device.serial,
                         "software_version": "2.11",
                         "state": "OFF" if device.is_off else "ON",
+                        "mode": ""
                     })
 
             return response_parsed
