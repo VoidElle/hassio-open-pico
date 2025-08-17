@@ -13,6 +13,7 @@ from homeassistant.const import (
 from homeassistant.core import DOMAIN, HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
+from .utils.device_model_parsers import parse_common_device_into_readable_obj
 from .api import APIUnauthorizedError
 from .managers.token_manager import GlobalTokenRepository
 from .api import API, APIConnectionError, DEVICES_LIST
@@ -51,7 +52,7 @@ class ExampleCoordinator(DataUpdateCoordinator):
         )
 
         # Initialise your api here and make available to your integration.
-        self.api = API(hass=hass, user=self.user, pwd=self.pwd, mock=True)
+        self.api = API(hass=hass, user=self.user, pwd=self.pwd)
 
     async def async_update_data(self):
         """Fetch data from API endpoint.
@@ -65,7 +66,6 @@ class ExampleCoordinator(DataUpdateCoordinator):
             # NOTE: Change this to use a real api call for data
             # ----------------------------------------------------------------------------
             # data = await self.hass.async_add_executor_job(self.api.get_data)
-            data = DEVICES_LIST
 
             # If no token is saved, we execute a new login request before
             # calling the retrival of the devices statuses
@@ -74,7 +74,23 @@ class ExampleCoordinator(DataUpdateCoordinator):
 
             # Retrieve the devices statuses
             try:
-                await self.hass.async_add_executor_job(self.api.get_updated_devices_statuses)
+
+                # Retrieve the new devices status from the API
+                new_data_to_parse = await self.hass.async_add_executor_job(self.api.get_updated_devices_statuses)
+
+                # Log the devices not parsed in a readable way for Home Assistant
+                _LOGGER.debug("NEW DATA - NOT PARSED")
+                _LOGGER.debug(new_data_to_parse)
+
+                # Parse the data in a readable way for Home Assistant
+                new_data_parsed = parse_common_device_into_readable_obj(new_data_to_parse)
+
+                # Log the devices parsed in a readable way from Home Assistant
+                _LOGGER.debug("NEW DATA - PARSED")
+                _LOGGER.debug(new_data_parsed)
+
+                # Set the new parsed data in the state
+                data = new_data_parsed
 
             # API Unauthorized error handling
             #
