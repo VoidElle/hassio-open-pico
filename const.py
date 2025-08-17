@@ -72,3 +72,20 @@ GET_DEVICES_HEADERS = {
     'User-Agent': USER_AGENT,
     'UserObj-Agent': USER_AGENT_OBJ
 }
+
+# Preset modes
+PRESET_MODES = [
+    "Heat recovery",
+    "Extraction",
+    "Immission",
+    "Humidity - Recovery",
+    "Humidity - Extraction",
+    "Humidity CO2 - Recovery",
+    "Humidity CO2 - Extraction",
+    "Comfort winter",
+    "Comfort summer",
+    "Natural ventilation",
+    "CO2 - Recovery",
+    "CO2 - Extraction",
+]
+

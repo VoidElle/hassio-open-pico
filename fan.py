@@ -7,6 +7,7 @@ from homeassistant.components.fan import FanEntity, FanEntityFeature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
+from .const import PRESET_MODES
 from . import MyConfigEntry
 from .base import ExampleBaseEntity
 from .coordinator import ExampleCoordinator
@@ -51,20 +52,7 @@ class ExampleFan(ExampleBaseEntity, FanEntity):
     _mode_parameter = "mode"  # The device API parameter for mode
 
     # Define available modes
-    _attr_preset_modes = [
-        "Heat recovery",
-        "Extraction",
-        "Immission",
-        "Humidity - Recovery",
-        "Humidity - Extraction",
-        "Humidity CO2 - Recovery",
-        "Humidity CO2 - Extraction",
-        "Comfort winter",
-        "Comfort summer",
-        "Natural ventilation",
-        "CO2 - Recovery",
-        "CO2 - Extraction"
-    ]
+    _attr_preset_modes = PRESET_MODES
 
     @property
     def is_on(self) -> bool | None:

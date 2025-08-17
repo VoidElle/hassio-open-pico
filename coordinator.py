@@ -13,7 +13,7 @@ from homeassistant.const import (
 from homeassistant.core import DOMAIN, HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .utils.device_model_parsers import parse_common_device_into_readable_obj
+from .utils.parsers import parse_common_device_into_readable_obj
 from .api import APIUnauthorizedError
 from .managers.token_manager import GlobalTokenRepository
 from .api import API, APIConnectionError, DEVICES_LIST
