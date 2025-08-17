@@ -8,7 +8,8 @@ from homeassistant.const import CONF_PIN
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .utils.device_commands import get_on_off_command
+from .utils.parsers import parse_device_mode_from_preset_to_int
+from .utils.device_commands import get_on_off_command, get_change_mode_command
 from .const import PRESET_MODES
 from . import MyConfigEntry
 from .base import ExampleBaseEntity
@@ -76,15 +77,23 @@ class ExampleFan(ExampleBaseEntity, FanEntity):
 
     async def async_set_preset_mode(self, preset_mode: str) -> None:
         """Set a new mode."""
+
         if preset_mode not in self.preset_modes:
             raise ValueError(f"Invalid mode: {preset_mode}")
 
+        device_name = self.device.get("device_name")
+        device_serial = self.device.get("device_uid")
+        device_pin = self.pin
+
+        parsed_preset_mode_to_int = parse_device_mode_from_preset_to_int(preset_mode)
+        command_preset_mode_to_send = get_change_mode_command(parsed_preset_mode_to_int, device_pin)
+        command_preset_mode_to_send_dumped = json.dumps(command_preset_mode_to_send)
+
         await self.hass.async_add_executor_job(
-            self.coordinator.api.set_data,
-            self.device_id,
-            self._mode_parameter,
-            preset_mode,
+            self.coordinator.api.execute_command, device_name, device_serial, device_pin, command_preset_mode_to_send_dumped
         )
+
+
         await self.coordinator.async_refresh()
 
     async def async_turn_on(self, percentage: int | None = None, preset_mode: str | None = None, **kwargs):
@@ -103,11 +112,13 @@ class ExampleFan(ExampleBaseEntity, FanEntity):
 
         # If a preset mode is specified, set it
         if preset_mode and preset_mode in self.preset_modes:
+
+            parsed_preset_mode_to_int = parse_device_mode_from_preset_to_int(preset_mode)
+            command_preset_mode_to_send = get_change_mode_command(parsed_preset_mode_to_int, device_pin)
+            command_preset_mode_to_send_dumped = json.dumps(command_preset_mode_to_send)
+
             await self.hass.async_add_executor_job(
-                self.coordinator.api.set_data,
-                self.device_id,
-                self._mode_parameter,
-                preset_mode,
+                self.coordinator.api.execute_command, device_name, device_serial, device_pin, command_preset_mode_to_send_dumped
             )
 
         await self.coordinator.async_refresh()
