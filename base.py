@@ -81,7 +81,7 @@ class ExampleBaseEntity(CoordinatorEntity):
         # ----------------------------------------------------------------------------
         return DeviceInfo(
             name=self.coordinator.get_device_parameter(self.device_id, "device_name"),
-            manufacturer="ACME Manufacturer",
+            manufacturer="Tecnosystemi",
             model=str(
                 self.coordinator.get_device_parameter(self.device_id, "device_type")
             )
