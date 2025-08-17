@@ -32,7 +32,6 @@ class API:
     def __init__(self, hass: HomeAssistant, user: str, pwd: str, pin: str) -> None:
         """Initialise."""
         self.hass = hass
-        self.host = "1.1.1.1"
         self.user = user
         self.pwd = pwd
         self.pin = pin
@@ -226,18 +225,6 @@ class API:
         except Exception as err:
             _LOGGER.debug("Error on ExecuteCommands request: %s", err)
             raise APIConnectionError("Exception on ExecuteCommands request") from err
-
-    def set_data(self, device_id: int, parameter: str, value: Any) -> bool:
-        """Set api data."""
-        try:
-            data = {parameter, value}
-            r = requests.post(
-                f"http://{self.host}/api/{device_id}", json=data, timeout=10
-            )
-        except requests.exceptions.ConnectTimeout as err:
-            raise APIConnectionError("Timeout connecting to api") from err
-        else:
-            return r.status_code == 200
 
 class APIAuthError(Exception):
     """Exception class for auth error."""
