@@ -13,6 +13,8 @@ from homeassistant.const import (
 from homeassistant.core import DOMAIN, HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
+from .api import APIUnauthorizedError
+from .managers.token_manager import GlobalTokenRepository
 from .api import API, APIConnectionError, DEVICES_LIST
 from .const import DEFAULT_SCAN_INTERVAL
 
@@ -64,8 +66,34 @@ class ExampleCoordinator(DataUpdateCoordinator):
             # ----------------------------------------------------------------------------
             # data = await self.hass.async_add_executor_job(self.api.get_data)
             data = DEVICES_LIST
-            await self.api.get_updated_devices_statuses()
+
+            # If no token is saved, we execute a new login request before
+            # calling the retrival of the devices statuses
+            if GlobalTokenRepository.token is None:
+                await self.hass.async_add_executor_job(self.api.execute_login)
+
+            # Retrieve the devices statuses
+            try:
+                await self.hass.async_add_executor_job(self.api.get_updated_devices_statuses)
+
+            # API Unauthorized error handling
+            #
+            # In case of an API unauthorized error, it is likely a token expired / no more valid
+            # issue. In order to be sure to have a valid / fresh token. We just remove it, making the flow execute
+            # a new login request before executing a new request of the polling
+            except APIUnauthorizedError as err:
+                _LOGGER.error(f"An authorization error occurred ({err}), removing the token to execute a new login in the next request")
+                GlobalTokenRepository.token = None
+                raise UpdateFailed("Authorization failed, it will retry autonomously") from err
+
+            # Default error handling
+            except Exception as err:
+                _LOGGER.debug("Error on Login request: %s", err)
+                raise UpdateFailed(err) from err
+
+            # Log the devices list
             _LOGGER.debug("DEVICES LIST: %s", DEVICES_LIST)
+
         except APIConnectionError as err:
             _LOGGER.error(err)
             raise UpdateFailed(err) from err

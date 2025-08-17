@@ -10,7 +10,6 @@ from typing import Any, Dict
 
 import requests
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import CYPHER_DEVICE_ID, PUSH_NOTIFICATION_PLATFORM, PUSH_NOTIFICATION_TOKEN, BASE_URL, API_LOGIN_URL, \
     API_LOGIN_HEADERS, GET_DEVICES_HEADERS, API_GET_PLANTS_URL
@@ -57,7 +56,7 @@ class API:
         # if mock and (self.user != "test" or self.pwd != "1234"):
             # raise APIAuthError("Invalid credentials!")
 
-    def execute_login(self):
+    def execute_login(self) -> ResponseUserModel:
         """Execute login."""
         try:
 
@@ -119,46 +118,66 @@ class API:
 
             return response_parsed
 
+        # Timeout error handling
+        except requests.exceptions.ConnectTimeout as err:
+            _LOGGER.error("Timeout connecting to api", err)
+            raise APIConnectionError("Timeout connecting to api") from err
+
+        # Default error handling
         except Exception as e:
             _LOGGER.debug("Error on Login request: %s", e)
             raise APIConnectionError("Exception on Login request") from e
 
-    async def get_updated_devices_statuses(self) -> list[CommonPlantModel]:
-
-        # Retrieve the new token to use
-        token_to_use = tokenManager.retrieve_new_token()
-
-        # Retrieve the email of the user
-        email = self.user
-
-        # Retrieve the new authorization to use
-        authorization = retrieve_api_key(email)
-
-        # Create the headers obj that will be used in the request
-        headers_to_use = {
-            **GET_DEVICES_HEADERS,
-            "Authorization": authorization,
-            "Token": token_to_use
-        }
-
-        # Log the response
-        _LOGGER.debug("*** PLANTS REQUEST HEADERS ***")
-        _LOGGER.debug(headers_to_use)
-
-        # Execute the request in a non-blocking way
-        session = async_get_clientsession(self.hass)
+    def get_updated_devices_statuses(self) -> list[CommonPlantModel]:
         try:
-            async with session.get(API_GET_PLANTS_URL, headers=headers_to_use) as resp:
-                _LOGGER.debug("*** PLANTS RESPONSE ***")
-                _LOGGER.debug(resp)
-                return []
+
+            # Retrieve the new token to use
+            token_to_use = tokenManager.retrieve_new_token()
+
+            # Retrieve the email of the user
+            email = self.user
+
+            # Retrieve the new authorization to use
+            authorization = retrieve_api_key(email)
+
+            # Create the headers obj that will be used in the request
+            headers_to_use = {
+                **GET_DEVICES_HEADERS,
+                "Authorization": authorization,
+                "Token": token_to_use
+            }
+
+            # Log the response
+            _LOGGER.debug("*** PLANTS REQUEST HEADERS ***")
+            _LOGGER.debug(headers_to_use)
+
+            # Execute the request
+            r = requests.get(API_GET_PLANTS_URL, headers=headers_to_use, timeout=10)
+
+            # Log the response
+            _LOGGER.debug("*** PLANTS RESPONSE ***")
+            _LOGGER.debug(r.json())
+
+            # If we retrieve a 401, we raise an APIUnauthorized error, that will be handled by the coordinator
+            if r.status_code == 401:
+                _LOGGER.debug("PLANTS RESPONSE Unauthorized!")
+                raise APIUnauthorizedError()
+
+            return []
+
+        # Timeout error handling
         except requests.exceptions.ConnectTimeout as err:
             _LOGGER.error("Timeout connecting to api", err)
             raise APIConnectionError("Timeout connecting to api") from err
-        except Exception as err:
-            _LOGGER.error(err)
 
-        return []
+        # Passing the exception to caller
+        except APIUnauthorizedError as err:
+            raise APIUnauthorizedError("Unauthorized") from err
+
+        # Default error handling
+        except Exception as err:
+            _LOGGER.debug("Error on Login request: %s", err)
+            raise APIConnectionError("Exception on Login request") from err
 
     def get_data(self) -> list[dict[str, Any]]:
         """Get api data."""
@@ -229,6 +248,8 @@ class API:
 class APIAuthError(Exception):
     """Exception class for auth error."""
 
-
 class APIConnectionError(Exception):
     """Exception class for connection error."""
+
+class APIUnauthorizedError(Exception):
+    """Exception class for unauthorized error."""
