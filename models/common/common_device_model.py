@@ -2,8 +2,10 @@ from dataclasses import dataclass
 from typing import Dict, Any
 import json
 
+from ..common.common_device_details_model import CommonDeviceDetailsModel
 
-@dataclass(frozen=True)
+
+@dataclass
 class CommonDeviceModel:
     """
     Attributes:
@@ -19,6 +21,7 @@ class CommonDeviceModel:
     operating_mode: int
     is_off: bool
     firmware_version: str
+    details: CommonDeviceDetailsModel | None
 
     @classmethod
     def from_json(cls, json_data: Dict[str, Any]) -> 'CommonDeviceModel':
@@ -37,7 +40,8 @@ class CommonDeviceModel:
             name=json_data['Name'],
             operating_mode=json_data['OperatingMode'],
             is_off=json_data['IsOff'],
-            firmware_version=json_data['FWVer']
+            firmware_version=json_data['FWVer'],
+            details=None
         )
 
     def to_json(self) -> Dict[str, Any]:
@@ -54,6 +58,7 @@ class CommonDeviceModel:
             'OperatingMode': self.operating_mode,
             'IsOff': self.is_off,
             'FWVer': self.firmware_version,
+            'Details': self.details,
         }
 
     @classmethod
@@ -95,6 +100,7 @@ class CommonDeviceModel:
             'operating_mode': self.operating_mode,
             'is_off': self.is_off,
             'firmware_version': self.firmware_version,
+            'details': self.details,
         }
         current_values.update(kwargs)
         return CommonDeviceModel(**current_values)

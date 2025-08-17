@@ -90,6 +90,7 @@ class ExampleFan(ExampleBaseEntity, FanEntity):
 
         return int(raw_speed * 100 / self._attr_speed_count)
 
+    # Function that will be called when a percentage is set to the device
     async def async_set_percentage(self, percentage: int) -> None:
 
         """Set speed based on percentage slider."""

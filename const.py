@@ -53,6 +53,7 @@ BASE_URL = f"https://{HOST}/"
 API_LOGIN_URL = f"https://{HOST}/apiTS/v2/Login"
 API_GET_PLANTS_URL = f"https://{HOST}/api/v1/GetPlants"
 API_SEND_PICO_CMD = f"https://{HOST}/api/v1/SendPicoCmd"
+API_GET_PICO_DETAILS = f"https://{HOST}/api/v1/GetPICOState"
 
 # Specific headers
 API_LOGIN_HEADERS = {
