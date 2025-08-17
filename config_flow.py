@@ -28,7 +28,7 @@ from homeassistant.const import (
     CONF_PASSWORD,
     CONF_SCAN_INTERVAL,
     CONF_SENSORS,
-    CONF_USERNAME,
+    CONF_USERNAME, CONF_PIN,
 )
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
@@ -47,6 +47,7 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_USERNAME, description={"suggested_value": "email@email.com"}): str,
         vol.Required(CONF_PASSWORD, description={"suggested_value": "password"}): str,
+        vol.Required(CONF_PIN, description={"suggested_value": "PIN"}): str,
     }
 )
 
@@ -61,7 +62,7 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
         # If you cannot connect, raise CannotConnect
         # If the authentication is wrong, raise InvalidAuth
         # ----------------------------------------------------------------------------
-        api = API(hass, data[CONF_USERNAME], data[CONF_PASSWORD])
+        api = API(hass, data[CONF_USERNAME], data[CONF_PASSWORD], data[CONF_PIN])
         # await hass.async_add_executor_job(api.get_data)
         await hass.async_add_executor_job(api.execute_login)
     except APIAuthError as err:

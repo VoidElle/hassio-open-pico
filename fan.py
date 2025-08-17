@@ -4,6 +4,7 @@ import logging
 from typing import Any
 
 from homeassistant.components.fan import FanEntity, FanEntityFeature
+from homeassistant.const import CONF_PIN
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -24,6 +25,7 @@ async def async_setup_entry(
     """Set up the Fans."""
     # This gets the data update coordinator from the config entry runtime data as specified in your __init__.py
     coordinator: ExampleCoordinator = config_entry.runtime_data.coordinator
+    device_pin = config_entry.data.get(CONF_PIN)
 
     # ----------------------------------------------------------------------------
     # Here we are going to add our fan entity for the fan in our mock data.
@@ -31,7 +33,7 @@ async def async_setup_entry(
 
     # Fans
     fans = [
-        ExampleFan(coordinator, device, "state")
+        ExampleFan(coordinator, device, "state", device_pin)
         for device in coordinator.data
         if device.get("device_type") == "FAN"
     ]
@@ -42,6 +44,10 @@ async def async_setup_entry(
 
 class ExampleFan(ExampleBaseEntity, FanEntity):
     """Implementation of a simple on/off fan with custom 'Mode' category."""
+
+    def __init__(self, coordinator, device, parameter, pin: str):
+        super().__init__(coordinator, device, parameter)
+        self.pin = pin
 
     _attr_supported_features = (
         FanEntityFeature.TURN_ON |
@@ -86,7 +92,7 @@ class ExampleFan(ExampleBaseEntity, FanEntity):
 
         device_name = self.device.get("device_name")
         device_serial = self.device.get("device_uid")
-        device_pin = "XXXX"
+        device_pin = self.pin
 
         command_to_send_to_parse = get_on_off_command(True, device_pin)
         command_to_send_parsed = json.dumps(command_to_send_to_parse)
@@ -110,7 +116,7 @@ class ExampleFan(ExampleBaseEntity, FanEntity):
 
         device_name = self.device.get("device_name")
         device_serial = self.device.get("device_uid")
-        device_pin = "XXXX"
+        device_pin = self.pin
 
         command_to_send_to_parse = get_on_off_command(False, device_pin)
         command_to_send_parsed = json.dumps(command_to_send_to_parse)
