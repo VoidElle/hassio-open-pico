@@ -18,6 +18,7 @@ class CommonDeviceModel:
     name: str
     operating_mode: int
     is_off: bool
+    firmware_version: str
 
     @classmethod
     def from_json(cls, json_data: Dict[str, Any]) -> 'CommonDeviceModel':
@@ -35,7 +36,8 @@ class CommonDeviceModel:
             serial=json_data['Serial'],
             name=json_data['Name'],
             operating_mode=json_data['OperatingMode'],
-            is_off=json_data['IsOff']
+            is_off=json_data['IsOff'],
+            firmware_version=json_data['FWVer']
         )
 
     def to_json(self) -> Dict[str, Any]:
@@ -50,7 +52,8 @@ class CommonDeviceModel:
             'Serial': self.serial,
             'Name': self.name,
             'OperatingMode': self.operating_mode,
-            'IsOff': self.is_off
+            'IsOff': self.is_off,
+            'FWVer': self.firmware_version,
         }
 
     @classmethod
@@ -90,7 +93,8 @@ class CommonDeviceModel:
             'name': self.name,
             'serial': self.serial,
             'operating_mode': self.operating_mode,
-            'is_off': self.is_off
+            'is_off': self.is_off,
+            'firmware_version': self.firmware_version,
         }
         current_values.update(kwargs)
         return CommonDeviceModel(**current_values)
