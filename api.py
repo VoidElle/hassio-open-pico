@@ -29,12 +29,13 @@ tokenManager = TokenManager(ref="MainTokenManager")
 class API:
     """Class for example API."""
 
-    def __init__(self, hass: HomeAssistant, user: str, pwd: str) -> None:
+    def __init__(self, hass: HomeAssistant, user: str, pwd: str, pin: str) -> None:
         """Initialise."""
         self.hass = hass
         self.host = "1.1.1.1"
         self.user = user
         self.pwd = pwd
+        self.pin = pin
 
     # Function to execute the login, it returns the user model
     def execute_login(self) -> ResponseUserModel:

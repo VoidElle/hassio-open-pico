@@ -8,7 +8,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     CONF_PASSWORD,
     CONF_SCAN_INTERVAL,
-    CONF_USERNAME,
+    CONF_USERNAME, CONF_PIN,
 )
 from homeassistant.core import DOMAIN, HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -32,6 +32,7 @@ class ExampleCoordinator(DataUpdateCoordinator):
 
         self.user = config_entry.data[CONF_USERNAME]
         self.pwd = config_entry.data[CONF_PASSWORD]
+        self.pin = config_entry.data[CONF_PIN]
 
         # set variables from options.  You need a default here in case options have not been set
         self.poll_interval = config_entry.options.get(
@@ -52,7 +53,7 @@ class ExampleCoordinator(DataUpdateCoordinator):
         )
 
         # Initialise your api here and make available to your integration.
-        self.api = API(hass=hass, user=self.user, pwd=self.pwd)
+        self.api = API(hass=hass, user=self.user, pwd=self.pwd, pin=self.pin)
 
     async def async_update_data(self):
         """Fetch data from API endpoint.
