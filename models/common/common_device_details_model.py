@@ -10,10 +10,12 @@ class CommonDeviceDetailsModel:
         serial: The device's serial (Injected, not given by API)
         speed_row: A percentage (0-100) that defines the current device's speed
         night_mode: Specify if the device's speed is in nith mode or not (1 yes - 2 no)
+        led_on_off: Specify if the LED of the device is visible or not (0 no - 1 yes)
     """
     serial: str
     speed_row: int
     night_mode: int
+    led_on_off: int
 
     @classmethod
     def from_json(cls, json_data: Dict[str, Any]) -> 'CommonDeviceDetailsModel':
@@ -30,6 +32,7 @@ class CommonDeviceDetailsModel:
             serial=json_data['Serial'],
             speed_row=json_data['spd_row'],
             night_mode=json_data['night_mod'],
+            led_on_off=json_data['led_on_off'],
         )
 
     def to_json(self) -> Dict[str, Any]:
@@ -43,6 +46,7 @@ class CommonDeviceDetailsModel:
             'Serial': self.serial,
             'spd_row': self.speed_row,
             'night_mod': self.night_mode,
+            'led_on_off': self.led_on_off,
         }
 
     @classmethod
@@ -81,6 +85,7 @@ class CommonDeviceDetailsModel:
             'serial': self.serial,
             'speed_row': self.speed_row,
             'night_mode': self.night_mode,
+            'led_on_off': self.led_on_off,
         }
         current_values.update(kwargs)
         return CommonDeviceDetailsModel(**current_values)

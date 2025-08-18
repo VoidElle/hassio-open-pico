@@ -42,3 +42,13 @@ def get_set_night_mode_command(enable: bool, device_pin: str):
         "idp": GlobalIdpRepository.idpCounter,
         "pin": device_pin
     }
+
+# Function to retrieve the command to send the status of the LED to a device
+def get_set_led_status_command(enable: bool, device_pin: str):
+    return {
+        "led_on_off_breve": 1 if enable else 2,
+        "cmd": "upd_pico",
+        "frm": "mqtt",
+        "idp": GlobalIdpRepository.idpCounter,
+        "pin": device_pin
+    }
