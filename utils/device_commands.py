@@ -1,10 +1,13 @@
 # Function to retrieve the command to set ON / OFF to a device
+from ..repositories.global_idp_repository import GlobalIdpRepository
+
+
 def get_on_off_command(new_value: bool, device_pin: str):
     return {
         "on_off": 1 if new_value else 2,
         "cmd": "upd_pico",
         "frm": "mqtt",
-        "idp": 2 if new_value else 1,
+        "idp": GlobalIdpRepository.idpCounter,
         "pin": device_pin
     }
 
@@ -15,7 +18,7 @@ def get_change_mode_command(new_mode: int, device_pin: str):
         "on_off": 1,
         "cmd": "upd_pico",
         "frm": "mqtt",
-        "idp": 1,
+        "idp": GlobalIdpRepository.idpCounter,
         "pin": device_pin
     }
 
@@ -26,7 +29,7 @@ def get_change_speed_command(percentage: int, device_pin: str):
         "speed": 0,
         "cmd": "upd_pico",
         "frm": "mqtt",
-        "idp": 1,
+        "idp": GlobalIdpRepository.idpCounter,
         "pin": device_pin
     }
 
@@ -36,8 +39,6 @@ def get_set_night_mode_command(enable: bool, device_pin: str):
         "night_mod": 1 if enable else 2,
         "cmd": "upd_pico",
         "frm": "mqtt",
-        "idp": 2,
+        "idp": GlobalIdpRepository.idpCounter,
         "pin": device_pin
     }
-
-# TODO: idp is not a static parameter, it is incremented every command is sent

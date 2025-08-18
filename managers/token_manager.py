@@ -6,13 +6,10 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.backends import default_backend
 
-from ..const import CYPHER_SALT, CYPHER_DEVICE_ID, STARTING_TOKEN
+from ..repositories.global_token_repository import GlobalTokenRepository
+from ..const import CYPHER_SALT, CYPHER_DEVICE_ID
 
 _LOGGER = logging.getLogger(__name__)
-
-class GlobalTokenRepository:
-    """Simple token repository"""
-    token: Optional[str] = None
 
 
 class TokenManager:
