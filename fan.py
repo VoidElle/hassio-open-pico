@@ -102,7 +102,9 @@ class Fan(BaseEntity, FanEntity):
         current_mode = self.device.get("mode")
         if current_mode not in MODULAR_FAN_SPEED_PRESET_MODES:
             raise HomeAssistantError(
-                f"Cannot set speed: current mode '{current_mode}' does not support percentage control"
+                translation_domain="open_pico_integration",
+                translation_key="errors.unsupported_mode",
+                translation_placeholders={"mode": current_mode},
             )
 
         # Execute the set percentage command

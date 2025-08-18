@@ -86,24 +86,24 @@ EXECUTE_COMMANDS_HEADERS = {
 
 # Preset modes that support the fan speed control
 MODULAR_FAN_SPEED_PRESET_MODES = [
-    "Heat recovery",
-    "Extraction",
-    "Immission",
-    "Comfort winter",
-    "Comfort summer",
+    "heat_recovery",
+    "extraction",
+    "immission",
+    "comfort_summer",
+    "comfort_winter",
 ]
 
 # Preset modes that support the selection of a desired level of humidity
 HUMIDITY_SELECTOR_PRESET_MODES = [
-    "Humidity - Recovery",
-    "Humidity - Extraction",
-    "Humidity CO2 - Recovery",
-    "Humidity CO2 - Extraction",
+    "humidity_recovery",
+    "humidity_extraction",
+    "humidity_co2_recovery",
+    "humidity_co2_extraction",
 ]
 
 # All the available preset modes
 PRESET_MODES = [
-    "Natural ventilation",
-    "CO2 - Recovery",
-    "CO2 - Extraction",
+    "natural_ventilation",
+    "co2_recovery",
+    "co2_extraction",
 ] + MODULAR_FAN_SPEED_PRESET_MODES + HUMIDITY_SELECTOR_PRESET_MODES

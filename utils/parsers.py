@@ -31,18 +31,18 @@ def parse_device_mode_from_int_to_preset(mode: int) -> str:
     try:
 
         mode_presets = {
-            1: "Heat recovery",
-            2: "Extraction",
-            3: "Immission",
-            4: "Humidity - Recovery",
-            5: "Humidity - Extraction",
-            6: "Comfort summer",
-            7: "Comfort winter",
-            8: "CO2 - Recovery",
-            9: "CO2 - Extraction",
-            10: "Humidity CO2 - Recovery",
-            11: "Humidity CO2 - Extraction",
-            12: "Natural ventilation",
+            1: "heat_recovery",
+            2: "extraction",
+            3: "immission",
+            4: "humidity_recovery",
+            5: "humidity_extraction",
+            6: "comfort_summer",
+            7: "comfort_winter",
+            8: "co2_recovery",
+            9: "co2_extraction",
+            10: "humidity_co2_recovery",
+            11: "humidity_co2_extraction",
+            12: "natural_ventilation",
         }
 
         return mode_presets[mode]
@@ -53,18 +53,18 @@ def parse_device_mode_from_int_to_preset(mode: int) -> str:
 # Function to retrieve the mode (int) from the preset (string)
 def parse_device_mode_from_preset_to_int(preset: str) -> int:
     mapping = {
-        "Heat recovery": 1,
-        "Extraction": 2,
-        "Immission": 3,
-        "Humidity - Recovery": 4,
-        "Humidity - Extraction": 5,
-        "Comfort summer": 6,
-        "Comfort winter": 7,
-        "CO2 - Recovery": 8,
-        "CO2 - Extraction": 9,
-        "Humidity CO2 - Recovery": 10,
-        "Humidity CO2 - Extraction": 11,
-        "Natural ventilation": 12
+        "heat_recovery": 1,
+        "extraction": 2,
+        "immission": 3,
+        "humidity_recovery": 4,
+        "humidity_extraction": 5,
+        "comfort_summer": 6,
+        "comfort_winter": 7,
+        "co2_recovery": 8,
+        "co2_extraction": 9,
+        "humidity_co2_recovery": 10,
+        "humidity_co2_extraction": 11,
+        "natural_ventilation": 12
     }
 
     if preset in mapping:

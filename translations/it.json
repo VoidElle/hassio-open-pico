@@ -1,0 +1,21 @@
+{
+  "errors": {
+    "unsupported_mode": "La modalità {mode} non supporta il controllo della velocità",
+    "device_not_responding": "Il dispositivo non risponde",
+    "invalid_parameter": "Parametro non valido: {parameter}"
+  },
+  "preset_modes": {
+    "heat_recovery": "Recupero calore",
+    "extraction": "Estrazione",
+    "immission": "Immissione",
+    "humidity_recovery": "Umidità - Recupero",
+    "humidity_extraction": "Umidità - Estrazione",
+    "comfort_summer": "Comfort estivo",
+    "comfort_winter": "Comfort invernale",
+    "co2_recovery": "CO₂ - Recupero",
+    "co2_extraction": "CO₂ - Estrazione",
+    "humidity_co2_recovery": "Umidità CO₂ - Recupero",
+    "humidity_co2_extraction": "Umidità CO₂ - Estrazione",
+    "natural_ventilation": "Ventilazione naturale"
+  }
+}
