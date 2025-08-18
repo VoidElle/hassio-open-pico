@@ -135,7 +135,8 @@ class Fan(ExampleBaseEntity, FanEntity):
         await self.coordinator.async_refresh()
 
     # Function that will be called when the device is TURNED ON
-    async def async_turn_on(self, preset_mode: str | None = None, **kwargs):
+    async def async_turn_on(self, percentage: int | None = None, preset_mode: str | None = None, **kwargs):
+
         """Turn on the fan."""
 
         device_name = self.device.get("device_name")
