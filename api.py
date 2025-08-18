@@ -10,6 +10,7 @@ from typing import Any, Dict
 import requests
 from homeassistant.core import HomeAssistant
 
+from .repositories.global_idp_repository import GlobalIdpRepository
 from .models.common.common_device_details_model import CommonDeviceDetailsModel
 from .models.requests.request_command_model import RequestCommandModel
 from .models.common.common_plant_model import CommonPlantModel
@@ -208,6 +209,9 @@ class API:
 
             # Execute the request
             r = requests.post(API_SEND_PICO_CMD, headers=headers_to_use, params=params_to_use, data=body_to_use, timeout=10)
+
+            # Increment the IDP counter
+            GlobalIdpRepository.idpCounter += 1
 
             # Log the response
             _LOGGER.debug("*** EXECUTE COMMANDS RESPONSE ***")
