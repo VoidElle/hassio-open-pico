@@ -93,7 +93,9 @@ class Switch(BaseEntity, SwitchEntity):
             if toggle_night_mode_cmd_nullable is None:
                 current_mode = self.device.get("mode")
                 raise HomeAssistantError(
-                    f"Cannot set night mode: current mode '{current_mode}' does not support night mode control"
+                    translation_domain="open_pico_integration",
+                    translation_key="errors.unsupported_mode",
+                    translation_placeholders={"mode": current_mode},
                 )
             else:
                 cmd_to_execute = toggle_night_mode_cmd_nullable
@@ -122,7 +124,9 @@ class Switch(BaseEntity, SwitchEntity):
             if toggle_night_mode_cmd_nullable is None:
                 current_mode = self.device.get("mode")
                 raise HomeAssistantError(
-                    f"Cannot set night mode: current mode '{current_mode}' does not support night mode control"
+                    translation_domain="open_pico_integration",
+                    translation_key="errors.unsupported_mode",
+                    translation_placeholders={"mode": current_mode},
                 )
             else:
                 cmd_to_execute = toggle_night_mode_cmd_nullable

@@ -1,77 +1,19 @@
 {
-  "config": {
-    "title": "Advanced Config Flow Example",
-    "abort": {
-      "already_configured": "Device is already configured",
-      "reconfigure_successful": "Reconfiguration successful",
-      "already_in_progress": "A setup is already in progress for this integration"
-    },
-    "error": {
-      "cannot_connect": "Failed to connect",
-      "invalid_auth": "Invalid authentication",
-      "invalid_settings": "Invalid settings",
-      "unknown": "Unexpected error"
-    },
-    "step": {
-      "user": {
-        "title": "Login into Tecnosystemi API",
-        "data": {
-          "host": "Host",
-          "password": "Password",
-          "username": "Username"
-        }
-      },
-      "settings": {
-        "title": "Multi Step Config - Step 2",
-        "data": {
-          "sensors": "Sensor",
-          "choose": "Selector",
-          "minimum": "Minimum Value"
-        }
-      },
-      "reconfigure": {
-        "data": {
-          "host": "Host",
-          "password": "Password",
-          "username": "Username"
-        }
-      }
-    }
+  "errors": {
+    "unsupported_mode": "Mode {mode} does not support night mode control"
   },
-  "options": {
-    "step": {
-      "init": {
-        "title": "Example2 Options",
-        "description": "Select which options to amend.",
-        "menu_options": {
-          "option1": "Options Set 1",
-          "option2": "Options Set 2"
-        }
-      },
-      "option1": {
-        "title": "Example2 Options",
-        "description": "Option Set 1",
-        "data": {
-          "scan_interval": "Scan Interval (seconds)",
-          "description": "My Description"
-        }
-      },
-      "option2": {
-        "title": "Example2 Options",
-        "description": "Option Set 2",
-        "data": {
-          "chose": "Pick a device"
-        }
-      }
-    }
-  },
-  "selector": {
-    "example_selector": {
-      "options": {
-        "all": "All",
-        "light": "Light",
-        "switch": "Switch"
-      }
-    }
+  "preset_modes": {
+    "heat_recovery": "Heat recovery",
+    "extraction": "Extraction",
+    "immission": "Immission",
+    "humidity_recovery": "Humidity - Recovery",
+    "humidity_extraction": "Humidity - Extraction",
+    "comfort_summer": "Comfort summer",
+    "comfort_winter": "Comfort winter",
+    "co2_recovery": "CO₂ - Recovery",
+    "co2_extraction": "CO₂ - Extraction",
+    "humidity_co2_recovery": "Humidity CO₂ - Recovery",
+    "humidity_co2_extraction": "Humidity CO₂ - Extraction",
+    "natural_ventilation": "Natural ventilation"
   }
 }

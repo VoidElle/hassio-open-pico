@@ -211,7 +211,6 @@ class API:
             # Log the response
             _LOGGER.debug("*** EXECUTE COMMANDS RESPONSE ***")
             _LOGGER.debug(r.json())
-            _LOGGER.debug(r.url)
 
         # Timeout error handling
         except requests.exceptions.ConnectTimeout as err:
