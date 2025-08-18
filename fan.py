@@ -6,11 +6,12 @@ from typing import Any
 from homeassistant.components.fan import FanEntity, FanEntityFeature
 from homeassistant.const import CONF_PIN
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .utils.parsers import parse_device_mode_from_preset_to_int
 from .utils.device_commands import get_on_off_command, get_change_mode_command, get_change_speed_command
-from .const import PRESET_MODES
+from .const import PRESET_MODES, MODULAR_FAN_SPEED_PRESET_MODES
 from . import MyConfigEntry
 from .base import ExampleBaseEntity
 from .coordinator import ExampleCoordinator
@@ -97,6 +98,13 @@ class Fan(ExampleBaseEntity, FanEntity):
         # We turn on the device if it is currently off
         if self.device.get("state") == "OFF":
             await self.async_turn_on()
+
+        # Make only set the fan's speed percentage in presets that support it
+        current_mode = self.device.get("mode")
+        if current_mode not in MODULAR_FAN_SPEED_PRESET_MODES:
+            raise HomeAssistantError(
+                f"Cannot set speed: current mode '{current_mode}' does not support percentage control"
+            )
 
         # Execute the set percentage command
         device_name = self.device.get("device_name")
