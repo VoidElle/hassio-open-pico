@@ -84,19 +84,26 @@ EXECUTE_COMMANDS_HEADERS = {
     'User-Agent': USER_AGENT,
 }
 
-# Preset modes
-PRESET_MODES = [
+# Preset modes that support the fan speed control
+MODULAR_FAN_SPEED_PRESET_MODES = [
     "Heat recovery",
     "Extraction",
     "Immission",
+    "Comfort winter",
+    "Comfort summer",
+]
+
+# Preset modes that support the selection of a desired level of humidity
+HUMIDITY_SELECTOR_PRESET_MODES = [
     "Humidity - Recovery",
     "Humidity - Extraction",
     "Humidity CO2 - Recovery",
     "Humidity CO2 - Extraction",
-    "Comfort winter",
-    "Comfort summer",
+]
+
+# All the available preset modes
+PRESET_MODES = [
     "Natural ventilation",
     "CO2 - Recovery",
     "CO2 - Extraction",
-]
-
+] + MODULAR_FAN_SPEED_PRESET_MODES + HUMIDITY_SELECTOR_PRESET_MODES
