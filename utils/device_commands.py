@@ -29,3 +29,15 @@ def get_change_speed_command(percentage: int, device_pin: str):
         "idp": 1,
         "pin": device_pin
     }
+
+# Function to retrieve the command to send the night mode to a device
+def get_set_night_mode_command(enable: bool, device_pin: str):
+    return {
+        "night_mod": 1 if enable else 2,
+        "cmd": "upd_pico",
+        "frm": "mqtt",
+        "idp": 2,
+        "pin": device_pin
+    }
+
+# TODO: idp is not a static parameter, it is incremented every command is sent
