@@ -109,12 +109,12 @@ class ExampleCoordinator(DataUpdateCoordinator):
             # API Unauthorized error handling
             #
             # In case of an API unauthorized error, it is likely a token expired / no more valid
-            # issue. In order to be sure to have a valid / fresh token. We just remove it, making the flow execute
-            # a new login request before executing a new request of the polling
+            # issue. In order to be sure to have a valid / fresh token. We remove it and remake the request.
+            # This will execute the same request, but before doing it, a new login request will be made
             except APIUnauthorizedError as err:
                 _LOGGER.error(f"An authorization error occurred ({err}), removing the token to execute a new login in the next request")
                 GlobalTokenRepository.token = None
-                raise UpdateFailed("Authorization failed, it will retry autonomously") from err
+                return await self.async_update_data()
 
             # Default error handling
             except Exception as err:

@@ -23,18 +23,15 @@ async def async_setup_entry(
     config_entry: MyConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ):
+
     """Set up the Fans."""
-    # This gets the data update coordinator from the config entry runtime data as specified in your __init__.py
+
     coordinator: ExampleCoordinator = config_entry.runtime_data.coordinator
     device_pin = config_entry.data.get(CONF_PIN)
 
-    # ----------------------------------------------------------------------------
-    # Here we are going to add our fan entity for the fan in our mock data.
-    # ----------------------------------------------------------------------------
-
     # Fans
     fans = [
-        ExampleFan(coordinator, device, "state", device_pin)
+        Fan(coordinator, device, "state", device_pin)
         for device in coordinator.data
         if device.get("device_type") == "FAN"
     ]
@@ -43,8 +40,7 @@ async def async_setup_entry(
     async_add_entities(fans)
 
 
-class ExampleFan(ExampleBaseEntity, FanEntity):
-    """Implementation of a simple on/off fan with custom 'Mode' category."""
+class Fan(ExampleBaseEntity, FanEntity):
 
     def __init__(self, coordinator, device, parameter, pin: str):
         super().__init__(coordinator, device, parameter)
