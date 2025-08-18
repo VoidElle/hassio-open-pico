@@ -1,7 +1,6 @@
 """Switch setup for our Integration."""
 import json
 import logging
-from typing import Any
 
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.const import CONF_PIN
@@ -12,8 +11,8 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .utils.device_commands import get_set_night_mode_command, get_set_led_status_command
 from .const import MODULAR_FAN_SPEED_PRESET_MODES
 from . import MyConfigEntry
-from .base import ExampleBaseEntity
-from .coordinator import ExampleCoordinator
+from .base import BaseEntity
+from .coordinator import MainCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -25,7 +24,7 @@ async def async_setup_entry(
 ):
     """Set up the Switches."""
 
-    coordinator: ExampleCoordinator = config_entry.runtime_data.coordinator
+    coordinator: MainCoordinator = config_entry.runtime_data.coordinator
     device_pin = config_entry.data.get(CONF_PIN)
 
     # Switches - Night mode
@@ -46,7 +45,7 @@ async def async_setup_entry(
     async_add_entities(switches)
 
 
-class Switch(ExampleBaseEntity, SwitchEntity):
+class Switch(BaseEntity, SwitchEntity):
     """Representation of a Switch."""
 
     def __init__(self, coordinator, device, parameter, pin: str):

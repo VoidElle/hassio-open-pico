@@ -1,8 +1,3 @@
-"""API Placeholder.
-
-You should create your api separately and have it hosted on PYPI.  This is included here for the sole purpose
-of making this example code executable.
-"""
 import json
 import logging
 from typing import Any, Dict
