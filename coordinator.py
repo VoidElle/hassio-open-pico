@@ -22,8 +22,8 @@ from .const import DEFAULT_SCAN_INTERVAL
 _LOGGER = logging.getLogger(__name__)
 
 
-class ExampleCoordinator(DataUpdateCoordinator):
-    """My example coordinator."""
+class MainCoordinator(DataUpdateCoordinator):
+    """The main coordinator"""
 
     data: list[dict[str, Any]]
 
@@ -34,21 +34,17 @@ class ExampleCoordinator(DataUpdateCoordinator):
         self.pwd = config_entry.data[CONF_PASSWORD]
         self.pin = config_entry.data[CONF_PIN]
 
-        # set variables from options.  You need a default here in case options have not been set
+        # set variables from options
         self.poll_interval = config_entry.options.get(
             CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
         )
 
-        # Initialise DataUpdateCoordinator
+        # Initialize DataUpdateCoordinator
         super().__init__(
             hass,
             _LOGGER,
             name=f"{DOMAIN} ({config_entry.unique_id})",
-            # Method to call on every update interval.
             update_method=self.async_update_data,
-            # Polling interval. Will only be polled if you have made your
-            # platform entities, CoordinatorEntities.
-            # Using config option here but you can just use a fixed value.
             update_interval=timedelta(seconds=self.poll_interval),
         )
 
@@ -56,17 +52,8 @@ class ExampleCoordinator(DataUpdateCoordinator):
         self.api = API(hass=hass, user=self.user, pwd=self.pwd, pin=self.pin)
 
     async def async_update_data(self):
-        """Fetch data from API endpoint.
-
-        This is the place to retrieve and pre-process the data into an appropriate data structure
-        to be used to provide values for all your entities.
-        """
+        """Fetch data from API endpoint"""
         try:
-            # ----------------------------------------------------------------------------
-            # Get the data from your api
-            # NOTE: Change this to use a real api call for data
-            # ----------------------------------------------------------------------------
-            # data = await self.hass.async_add_executor_job(self.api.get_data)
 
             # If no token is saved, we execute a new login request before
             # calling the retrival of the devices statuses
@@ -131,12 +118,6 @@ class ExampleCoordinator(DataUpdateCoordinator):
         # What is returned here is stored in self.data by the DataUpdateCoordinator
         return data
 
-    # ----------------------------------------------------------------------------
-    # Here we add some custom functions on our data coordinator to be called
-    # from entity platforms to get access to the specific data they want.
-    #
-    # These will be specific to your api or yo may not need them at all
-    # ----------------------------------------------------------------------------
     def get_device(self, device_id: int) -> dict[str, Any]:
         """Get a device entity from our api data."""
         try:

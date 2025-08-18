@@ -1,11 +1,4 @@
-"""Config flows for our integration.
-
-This config flow demonstrates many aspects of possible config flows.
-
-Multi step flows
-Menus
-Using your api data in your flow
-"""
+"""Config flows"""
 
 from __future__ import annotations
 
@@ -15,28 +8,19 @@ from typing import Any
 import voluptuous as vol
 
 from homeassistant.config_entries import (
-    ConfigEntry,
     ConfigFlow,
     ConfigFlowResult,
-    OptionsFlow,
 )
 from homeassistant.const import (
-    CONF_CHOOSE,
-    CONF_DESCRIPTION,
     CONF_HOST,
-    CONF_MINIMUM,
     CONF_PASSWORD,
-    CONF_SCAN_INTERVAL,
-    CONF_SENSORS,
     CONF_USERNAME, CONF_PIN,
 )
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers.selector import selector
 
 from .api import API, APIAuthError, APIConnectionError
-from .const import DEFAULT_SCAN_INTERVAL, DOMAIN, MIN_SCAN_INTERVAL
-from .coordinator import ExampleCoordinator
+from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -84,16 +68,6 @@ class ExampleConfigFlow(ConfigFlow, domain=DOMAIN):
     _input_data: dict[str, Any]
     _title: str
 
-    @staticmethod
-    @callback
-    def async_get_options_flow(config_entry):
-        """Get the options flow for this handler.
-
-        Remove this method and the ExampleOptionsFlowHandler class
-        if you do not want any options for your integration.
-        """
-        return ExampleOptionsFlowHandler(config_entry)
-
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
@@ -117,7 +91,7 @@ class ExampleConfigFlow(ConfigFlow, domain=DOMAIN):
                 errors["base"] = "cannot_connect"
             except InvalidAuth:
                 errors["base"] = "invalid_auth"
-            except Exception:  # pylint: disable=broad-except
+            except Exception:
                 _LOGGER.exception("Unexpected exception")
                 errors["base"] = "unknown"
 
@@ -193,93 +167,11 @@ class ExampleConfigFlow(ConfigFlow, domain=DOMAIN):
                         CONF_USERNAME, default=config_entry.data[CONF_USERNAME]
                     ): str,
                     vol.Required(CONF_PASSWORD): str,
+                    vol.Required(CONF_PIN): str,
                 }
             ),
             errors=errors,
         )
-
-
-class ExampleOptionsFlowHandler(OptionsFlow):
-    """Handles the options flow.
-
-    Here we use an initial menu to select different options forms,
-    and show how to use api data to populate a selector.
-    """
-
-    def __init__(self, config_entry: ConfigEntry) -> None:
-        """Initialize options flow."""
-        self.config_entry = config_entry
-        self.options = dict(config_entry.options)
-
-    async def async_step_init(self, user_input=None):
-        """Handle options flow.
-
-        Display an options menu
-        option ids relate to step function name
-        Also need to be in strings.json and translation files.
-        """
-
-        return self.async_show_menu(
-            step_id="init",
-            menu_options=["option1", "option2"],
-        )
-
-    async def async_step_option1(self, user_input=None):
-        """Handle menu option 1 flow."""
-        if user_input is not None:
-            options = self.config_entry.options | user_input
-            return self.async_create_entry(title="", data=options)
-
-        # ----------------------------------------------------------------------------
-        # It is recommended to prepopulate options fields with default values if
-        # available.
-        # These will be the same default values you use on your coordinator for
-        # setting variable values if the option has not been set.
-        # ----------------------------------------------------------------------------
-        data_schema = vol.Schema(
-            {
-                vol.Optional(
-                    CONF_SCAN_INTERVAL,
-                    default=self.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
-                ): (vol.All(vol.Coerce(int), vol.Clamp(min=MIN_SCAN_INTERVAL))),
-                vol.Optional(
-                    CONF_DESCRIPTION,
-                    default=self.options.get(CONF_DESCRIPTION),
-                ): str,
-            }
-        )
-
-        return self.async_show_form(step_id="option1", data_schema=data_schema)
-
-    async def async_step_option2(self, user_input=None):
-        """Handle menu option 2 flow.
-
-        In this option, we show how to use dynamic data in a selector.
-        """
-        if user_input is not None:
-            options = self.config_entry.options | user_input
-            return self.async_create_entry(title="", data=options)
-
-        coordinator: ExampleCoordinator = self.hass.data[DOMAIN][
-            self.config_entry.entry_id
-        ].coordinator
-        devices = coordinator.data
-        data_schema = vol.Schema(
-            {
-                vol.Optional(CONF_CHOOSE, default=devices[0]["device_name"]): selector(
-                    {
-                        "select": {
-                            "options": [device["device_name"] for device in devices],
-                            "mode": "dropdown",
-                            "sort": True,
-                        }
-                    }
-                ),
-            }
-        )
-
-        return self.async_show_form(step_id="option2", data_schema=data_schema)
-
 
 class CannotConnect(HomeAssistantError):
     """Error to indicate we cannot connect."""
