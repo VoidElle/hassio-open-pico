@@ -24,7 +24,6 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .const import DOMAIN
 from .coordinator import ExampleCoordinator
-from .services import ExampleServicesSetup
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -95,13 +94,6 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: MyConfigEntry) ->
     # This calls the async_setup method in each of your entity type files.
     # ----------------------------------------------------------------------------
     await hass.config_entries.async_forward_entry_setups(config_entry, PLATFORMS)
-
-    # ----------------------------------------------------------------------------
-    # Setup global services
-    # This can be done here but included in a seperate file for ease of reading.
-    # See also light.py for entity services examples
-    # ----------------------------------------------------------------------------
-    ExampleServicesSetup(hass, config_entry)
 
     # Return true to denote a successful setup.
     return True
