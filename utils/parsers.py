@@ -20,6 +20,7 @@ def parse_common_device_into_readable_obj(devices: list[CommonDeviceModel]):
             "state": "OFF" if device.is_off else "ON",
             "mode": parse_device_mode_from_int_to_preset(device.operating_mode),
             "speed": device.details.speed_row,
+            "night_mode": "ON" if device.details.night_mode == 1 else "OFF",
         })
 
     return result_list
