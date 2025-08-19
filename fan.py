@@ -63,6 +63,8 @@ class Fan(BaseEntity, FanEntity):
     _attr_speed_count = 100
     _attr_percentage_step = 1
 
+    _attr_translation_key = "pico"
+
     @property
     def is_on(self) -> bool | None:
         return (
