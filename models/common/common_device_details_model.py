@@ -14,6 +14,7 @@ class CommonDeviceDetailsModel:
     """
     serial: str
     speed_row: int
+    speed_rich: int
     night_mode: int
     led_on_off: int
 
@@ -31,6 +32,7 @@ class CommonDeviceDetailsModel:
         return cls(
             serial=json_data['Serial'],
             speed_row=json_data['spd_row'],
+            speed_rich=json_data['spd_rich'],
             night_mode=json_data['night_mod'],
             led_on_off=json_data['led_on_off'],
         )
@@ -45,6 +47,7 @@ class CommonDeviceDetailsModel:
         return {
             'Serial': self.serial,
             'spd_row': self.speed_row,
+            'spd_rich': self.speed_rich,
             'night_mod': self.night_mode,
             'led_on_off': self.led_on_off,
         }
@@ -84,6 +87,7 @@ class CommonDeviceDetailsModel:
         current_values = {
             'serial': self.serial,
             'speed_row': self.speed_row,
+            'speed_rich': self.speed_rich,
             'night_mode': self.night_mode,
             'led_on_off': self.led_on_off,
         }
