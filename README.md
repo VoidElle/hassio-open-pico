@@ -1,5 +1,7 @@
-<div align="center">
+<div style="text-align: center;">
   <img src="./assets/logo.png" alt="Logo" height="200">
+  <br>
+  <small><em>(Official Tecnosystemi logo not used due to copyright restrictions)</em></small>
   <br><br>
   <h1>🏠 Hassio Open Pico</h1>
   <p><em>Home Assistant integration for Tecnosystemi Pico devices</em></p>
