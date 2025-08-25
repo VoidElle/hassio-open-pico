@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./assets/logo.png" alt="Logo" height="800">
+  <img src="./assets/logo.png" alt="Logo" height="400">
   <br><br>
   <h1>🏠 Hassio Open Pico</h1>
   <p><em>Home Assistant integration for Tecnosystemi Pico devices</em></p>
