@@ -93,7 +93,7 @@ class Switch(BaseEntity, SwitchEntity):
             if toggle_night_mode_cmd_nullable is None:
                 current_mode = self.device.get("mode")
                 raise HomeAssistantError(
-                    translation_domain="open_pico_integration",
+                    translation_domain="open_pico",
                     translation_key="errors.unsupported_mode",
                     translation_placeholders={"mode": current_mode},
                 )
@@ -124,7 +124,7 @@ class Switch(BaseEntity, SwitchEntity):
             if toggle_night_mode_cmd_nullable is None:
                 current_mode = self.device.get("mode")
                 raise HomeAssistantError(
-                    translation_domain="open_pico_integration",
+                    translation_domain="open_pico",
                     translation_key="errors.unsupported_mode",
                     translation_placeholders={"mode": current_mode},
                 )

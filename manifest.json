@@ -1,6 +1,6 @@
 {
-  "domain": "open_pico_integration",
-  "name": "Open Pico integration (Tecnosystemi)",
+  "domain": "open_pico",
+  "name": "Open Pico - Tecnosystemi",
   "codeowners": [
     "@VoidElle"
   ],

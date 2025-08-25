@@ -1,6 +1,6 @@
 """Constants for our integration."""
 
-DOMAIN = "open_pico_integration"
+DOMAIN = "open_pico"
 
 DEFAULT_SCAN_INTERVAL = 60
 MIN_SCAN_INTERVAL = 10
