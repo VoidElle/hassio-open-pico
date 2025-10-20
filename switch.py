@@ -9,7 +9,6 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .utils.device_commands import get_set_night_mode_command, get_set_led_status_command
-from .const import MODULAR_FAN_SPEED_PRESET_MODES
 from . import MyConfigEntry
 from .base import BaseEntity
 from .coordinator import MainCoordinator
@@ -81,8 +80,7 @@ class Switch(BaseEntity, SwitchEntity):
         """Toggle the night mode."""
 
         # Return None if the current mode does not support night mode
-        current_mode = self.device.get("mode")
-        if current_mode not in MODULAR_FAN_SPEED_PRESET_MODES:
+        if self.device.get("selected_mode_supports_night_mode") == "OFF":
             return None
 
         device_pin = self.pin
