@@ -107,3 +107,22 @@ PRESET_MODES = [
     "co2_recovery",
     "co2_extraction",
 ] + MODULAR_FAN_SPEED_PRESET_MODES + HUMIDITY_SELECTOR_PRESET_MODES
+
+# Device mode mapping - single source of truth
+MODE_INT_TO_PRESET = {
+    1: "heat_recovery",
+    2: "extraction",
+    3: "immission",
+    4: "humidity_recovery",
+    5: "humidity_extraction",
+    6: "comfort_summer",
+    7: "comfort_winter",
+    8: "co2_recovery",
+    9: "co2_extraction",
+    10: "humidity_co2_recovery",
+    11: "humidity_co2_extraction",
+    12: "natural_ventilation",
+}
+
+# Reverse mapping for preset to int conversion
+MODE_PRESET_TO_INT = {v: k for k, v in MODE_INT_TO_PRESET.items()}
