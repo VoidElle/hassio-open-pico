@@ -24,8 +24,8 @@ def parse_common_device_into_readable_obj(devices: list[CommonDeviceModel]):
             "speed": device.details.speed_rich,
             "night_mode": "ON" if device.details.night_mode == 1 else "OFF",
             "led_status": "ON" if device.details.led_on_off == 1 else "OFF",
-            "selected_mode_supports_night_mode": "ON" if device_mode_to_preset in MODULAR_FAN_SPEED_PRESET_MODES else "OFF",
-            "selected_mode_supports_target_humidity_control": "ON" if device_mode_to_preset in HUMIDITY_SELECTOR_PRESET_MODES else "OFF",
+            "selected_mode_supports_night_mode": "ON" if device_mode_to_preset in MODULAR_FAN_SPEED_PRESET_MODES and not device.is_off else "OFF",
+            "selected_mode_supports_target_humidity_control": "ON" if device_mode_to_preset in HUMIDITY_SELECTOR_PRESET_MODES and not device.is_off else "OFF",
         })
 
     return result_list
