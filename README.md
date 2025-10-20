@@ -53,9 +53,9 @@ This integration took inspiration from:
 - 🚨 PIN must be the same across all Pico devices 🚨
 
 ## Tested On 🧪
-- PICO PRO 30 **(ACD100056)**
+- PICO PRO PLUS 30 **(ACD100052)**
 
-*Should work on all Pico models*
+*Most features should work on all Pico models*
 
 ## Token Architecture 🔐
 
