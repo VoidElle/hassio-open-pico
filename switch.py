@@ -27,19 +27,29 @@ async def async_setup_entry(
     coordinator: MainCoordinator = config_entry.runtime_data.coordinator
     device_pin = config_entry.data.get(CONF_PIN)
 
-    # Switches - Night mode
-    switches = [
-        Switch(coordinator, device, "night_mode", device_pin)
-        for device in coordinator.data
-        if device.get("device_type") == "FAN"
+    # Define the switch types for FAN devices
+    switch_types = [
+
+        # Night mode switch
+        "night_mode",
+
+        # Switch to indicate if the currently selected mode supports night mode
+        "selected_mode_supports_night_mode",
+
+        # Switch to indicate if the currently selected mode supports target humidity control
+        "selected_mode_supports_target_humidity_control",
+
+        # LED status switch
+        "led_status",
     ]
 
-    # Switches - Led status
-    switches.extend([
-        Switch(coordinator, device, "led_status", device_pin)
+    # Create switches
+    switches = [
+        Switch(coordinator, device, switch_type, device_pin)
         for device in coordinator.data
         if device.get("device_type") == "FAN"
-    ])
+        for switch_type in switch_types
+    ]
 
     # Create the switches.
     async_add_entities(switches)
@@ -55,14 +65,17 @@ class Switch(BaseEntity, SwitchEntity):
     @property
     def is_on(self) -> bool | None:
         """Return True if switch is on."""
+        valid_parameters = [
+            "night_mode",
+            "led_status",
+            "selected_mode_supports_night_mode",
+            "selected_mode_supports_target_humidity_control",
+        ]
 
-        # Handle ON / OFF status if the switch is for the night mode
-        is_night_mode_on = self.parameter == "night_mode" and self.device.get("night_mode") == "ON"
+        if self.parameter in valid_parameters:
+            return self.device.get(self.parameter) == "ON"
 
-        # Handle ON / OFF status if the switch is for the LED status
-        is_led_status_on = self.parameter == "led_status" and self.device.get("led_status") == "ON"
-
-        return is_night_mode_on or is_led_status_on
+        return None
 
     def handle_toggle_night_mode(self, new_status: bool) -> str | None:
         """Toggle the night mode."""
