@@ -59,10 +59,6 @@ class Fan(BaseEntity, FanEntity):
     # Define available preset modes
     _attr_preset_modes = PRESET_MODES
 
-    # The device API parameter for speed
-    _attr_speed_count = 100
-    _attr_percentage_step = 1
-
     _attr_translation_key = "pico"
 
     @property
@@ -77,6 +73,17 @@ class Fan(BaseEntity, FanEntity):
         """Return the current mode."""
         mode = self.coordinator.get_device_parameter(self.device_id, self._mode_parameter)
         return mode if mode in self.preset_modes else None
+
+    @property
+    def speed_count(self) -> int:
+        """Return the speed count based on current preset mode."""
+        current_mode = self.preset_mode
+
+        # If the current mode supports speed percentage control, return 100
+        if current_mode in MODULAR_FAN_SPEED_PRESET_MODES:
+            return 100
+        else:
+            return 1
 
     @property
     def percentage(self) -> int | None:
