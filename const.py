@@ -126,3 +126,13 @@ MODE_INT_TO_PRESET = {
 
 # Reverse mapping for preset to int conversion
 MODE_PRESET_TO_INT = {v: k for k, v in MODE_INT_TO_PRESET.items()}
+
+# Options for target humidity selector
+TARGET_HUMIDITY_OPTIONS = {
+    1: "40%",
+    2: "50%",
+    3: "60%",
+}
+
+# Reverse mapping for target humidity selector options
+REVERSED_TARGET_HUMIDITY_OPTIONS = {v: k for k, v in TARGET_HUMIDITY_OPTIONS.items()}
