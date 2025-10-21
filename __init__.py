@@ -19,6 +19,7 @@ _LOGGER = logging.getLogger(__name__)
 PLATFORMS: list[Platform] = [
     Platform.FAN,
     Platform.SWITCH,
+    Platform.SELECT,
 ]
 
 type MyConfigEntry = ConfigEntry[RuntimeData]

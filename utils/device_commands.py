@@ -52,3 +52,13 @@ def get_set_led_status_command(enable: bool, device_pin: str):
         "idp": GlobalIdpRepository.idpCounter,
         "pin": device_pin
     }
+
+# Function to retrieve the command to set the target humidity of a device
+def get_set_target_humidity_command(humidity: int, device_pin: str):
+    return {
+        "s_umd": humidity,
+        "cmd": "upd_pico",
+        "frm": "mqtt",
+        "idp": GlobalIdpRepository.idpCounter,
+        "pin": device_pin
+    }
