@@ -60,27 +60,6 @@ This integration took inspiration from:
 
 *Most features should work on all Pico models*
 
-## Token Architecture 🔐
-
-The most complex aspect of this integration is obtaining and maintaining valid API access tokens. The token mechanism has been **completely reverse-engineered from the official Tecnosystemi mobile application** through extensive analysis of network traffic and binary decompilation.
-
-### Technical Implementation
-
-Unlike conventional stateless bearer tokens, Pico's authentication system employs a sophisticated **stateful token architecture** where the client bears responsibility for token lifecycle management:
-
-- **Token Structure**: Each token encapsulates encrypted payload in the format `{session_identifier}_{call_counter}`
-- **Cryptographic Scheme**: AES-256 encryption using CBC mode with PKCS7 padding, base64-encoded output
-- **Key Derivation**: Composite key generated from fixed device identifier (first 8 characters) + static salt, hashed with SHA-256 and truncated to 32 bytes
-- **Counter Mechanism**: Every API request requires decrypting the token, incrementing the embedded counter, and re-encrypting before transmission
-
-### Security Implications
-
-- **Mutual Exclusion**: Token invalidation occurs upon any successful authentication event (integration login, mobile app login, or direct API access), enforcing single-session semantics
-- **Replay Protection**: The incrementing counter prevents replay attacks and ensures request ordering
-- **Zero IV**: Uses a null initialization vector (16 zero bytes) for deterministic encryption
-
-This architecture, while unconventional, provides robust session management at the cost of concurrent access limitations. The reverse-engineered implementation maintains full compatibility with the original mobile application's cryptographic protocols.
-
 ## Contributing 🤝
 
 Contributions are welcome! 
