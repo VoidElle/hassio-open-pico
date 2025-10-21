@@ -18,6 +18,9 @@ This integration took inspiration from:
 
 ## Installation 📦
 ### Via HACS (Recommended) ⭐
+[![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=VoidElle&repository=hassio-open-pico&category=integration)
+
+### Via HACS (Manual)
 1. Add custom repository:
    - Open HACS in your Home Assistant interface
     - Go to "Integrations" tab
