@@ -77,10 +77,15 @@ class Fan(BaseEntity, FanEntity):
     @property
     def speed_count(self) -> int:
         """Return the speed count based on current preset mode."""
+
+        # Retrieve the current mode
         current_mode = self.preset_mode
 
-        # If the current mode supports speed percentage control, return 100
-        if current_mode in MODULAR_FAN_SPEED_PRESET_MODES:
+        # Retrieve if night mode is enabled
+        night_mode_enabled = self.coordinator.get_device_parameter(self.device_id, "night_mode") == "ON"
+
+        # If the current mode supports speed percentage control, and it is not in night mode, return 100
+        if current_mode in MODULAR_FAN_SPEED_PRESET_MODES and not night_mode_enabled:
             return 100
         else:
             return 1
@@ -89,11 +94,22 @@ class Fan(BaseEntity, FanEntity):
     def percentage(self) -> int | None:
         """Return the current speed percentage."""
 
+        # Retrieve the current mode
+        current_mode = self.preset_mode
+
+        # Retrieve the raw speed value
         raw_speed = self.coordinator.get_device_parameter(self.device_id, "speed")
         if raw_speed is None:
             return None
 
-        return int(raw_speed * 100 / self._attr_speed_count)
+        # Retrieve if night mode is enabled
+        night_mode_enabled = self.coordinator.get_device_parameter(self.device_id, "night_mode") == "ON"
+
+        # Return the percentage only if the current mode supports its control and night mode is not enabled
+        if current_mode in MODULAR_FAN_SPEED_PRESET_MODES and not night_mode_enabled:
+            return int(raw_speed * 100 / self._attr_speed_count)
+        else:
+            return None
 
     # Function that will be called when a percentage is set to the device
     async def async_set_percentage(self, percentage: int) -> None:
