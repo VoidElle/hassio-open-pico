@@ -109,7 +109,7 @@ class Fan(BaseEntity, FanEntity):
         if current_mode in MODULAR_FAN_SPEED_PRESET_MODES and not night_mode_enabled:
             return int(raw_speed * 100 / self._attr_speed_count)
         else:
-            return None
+            return 100 if self.is_on else 0
 
     # Function that will be called when a percentage is set to the device
     async def async_set_percentage(self, percentage: int) -> None:
