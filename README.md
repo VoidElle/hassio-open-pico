@@ -40,8 +40,9 @@ This integration took inspiration from:
 3. Restart Home Assistant 🔄
 
 ### Manual Installation 🔧
-1. Copy the `custom_components/hassio_open_pico` folder to your `custom_components` directory
-2. Restart Home Assistant
+1. Copy the repository content inside a folder called `hassio_open_pico`
+2. Move the folder to your `custom_components` directory
+3. Restart Home Assistant
 
 ## Configuration ⚙️
 1. Go to Settings > Devices & Services
