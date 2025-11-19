@@ -6,10 +6,10 @@ import logging
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
+from .open_pico_local_api.pico_client import PicoClient
 from .open_pico_local_api.models.pico_device_model import PicoDeviceModel
 from .open_pico_local_api.enums.device_mode_enum import DeviceModeEnum
 
-from .pico_manager import PicoClientManager
 from .const import DEFAULT_SCAN_INTERVAL, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
@@ -20,30 +20,29 @@ class MainCoordinator(DataUpdateCoordinator):
 
     data: PicoDeviceModel | None
 
-    def __init__(self, hass: HomeAssistant, pico_ip: str, pin: str, manager: PicoClientManager) -> None:
-        """Initialize coordinator from YAML config."""
+    def __init__(self, hass: HomeAssistant, client: PicoClient) -> None:
+        """Initialize coordinator."""
+        self.client = client
+        self.pico_ip = client.ip
 
-        # Store the pico IP and PIN
-        self.pico_ip = pico_ip
-        self.pin = pin
-        self.manager = manager
-
-        # Initialize DataUpdateCoordinator
         super().__init__(
             hass,
             _LOGGER,
-            name=f"{DOMAIN} ({pico_ip})",
+            name=f"{DOMAIN} ({client.ip})",
             update_method=self.async_update_data,
             update_interval=timedelta(seconds=DEFAULT_SCAN_INTERVAL),
         )
 
     async def async_update_data(self) -> PicoDeviceModel:
-        """Fetch data from API endpoint."""
+        """Fetch data from device."""
         try:
             _LOGGER.debug("Starting data update for device %s", self.pico_ip)
 
-            # Get the device status via shared manager
-            status = await self.manager.get_status(self.pico_ip)
+            if not self.client.connected:
+                _LOGGER.debug("Connecting to device %s...", self.pico_ip)
+                await self.client.connect()
+
+            status = await self.client.get_status()
 
             if status is None:
                 raise UpdateFailed("Failed to get device status")
@@ -64,10 +63,11 @@ class MainCoordinator(DataUpdateCoordinator):
             raise UpdateFailed(f"Error communicating with device: {err}") from err
 
     async def async_shutdown(self) -> None:
-        """Shutdown is handled by the manager."""
+        """Shutdown the coordinator."""
+        # Client disconnect is handled by manager
         pass
 
-    # Helper properties for entities
+    # Helper properties
     @property
     def is_on(self) -> bool:
         """Check if device is on."""
@@ -116,68 +116,35 @@ class MainCoordinator(DataUpdateCoordinator):
     # Control methods
     async def async_turn_on(self) -> None:
         """Turn the device on."""
-        await self.manager.send_command(
-            self.pico_ip,
-            self.manager._client.turn_on,
-            retry=True
-        )
+        await self.client.turn_on(retry=True)
         await self.async_request_refresh()
 
     async def async_turn_off(self) -> None:
         """Turn the device off."""
-        await self.manager.send_command(
-            self.pico_ip,
-            self.manager._client.turn_off,
-            retry=True
-        )
+        await self.client.turn_off(retry=True)
         await self.async_request_refresh()
 
     async def async_set_mode(self, mode: DeviceModeEnum | int) -> None:
         """Set operating mode."""
-        await self.manager.send_command(
-            self.pico_ip,
-            self.manager._client.change_operating_mode,
-            mode,
-            retry=True
-        )
+        await self.client.change_operating_mode(mode, retry=True)
         await self.async_request_refresh()
 
     async def async_set_fan_speed(self, percentage: int) -> None:
         """Set fan speed percentage."""
-        await self.manager.send_command(
-            self.pico_ip,
-            self.manager._client.change_fan_speed,
-            percentage,
-            retry=True
-        )
+        await self.client.change_fan_speed(percentage, retry=True)
         await self.async_request_refresh()
 
     async def async_set_night_mode(self, enable: bool) -> None:
         """Set night mode."""
-        await self.manager.send_command(
-            self.pico_ip,
-            self.manager._client.set_night_mode,
-            enable,
-            retry=True
-        )
+        await self.client.set_night_mode(enable, retry=True)
         await self.async_request_refresh()
 
     async def async_set_led_status(self, enable: bool) -> None:
         """Set LED status."""
-        await self.manager.send_command(
-            self.pico_ip,
-            self.manager._client.set_led_status,
-            enable,
-            retry=True
-        )
+        await self.client.set_led_status(enable, retry=True)
         await self.async_request_refresh()
 
     async def async_set_target_humidity(self, target: int) -> None:
         """Set target humidity."""
-        await self.manager.send_command(
-            self.pico_ip,
-            self.manager._client.set_target_humidity,
-            target,
-            retry=True
-        )
+        await self.client.set_target_humidity(target, retry=True)
         await self.async_request_refresh()

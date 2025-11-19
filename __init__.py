@@ -60,21 +60,23 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
     # Create shared PicoClient manager
     manager = PicoClientManager()
+    await manager.initialize()
     hass.data[DOMAIN]["manager"] = manager
 
-    # Add all devices to manager and create coordinators
-    for device in devices:
-        pico_ip = device.get("ip")
-        pin = device.get("pin")
+    # Create clients and coordinators for each device
+    for device_config in devices:
+        pico_ip = device_config.get("ip")
+        pin = device_config.get("pin")
 
         _LOGGER.debug("Setting up device: ip=%s, pin=%s", pico_ip, pin)
 
         try:
-            # Add device to manager
-            await manager.add_device(pico_ip, pin)
+            # Create client with shared socket
+            client = manager.create_client(pico_ip, pin)
+            await client.connect()
 
             # Initialize the coordinator for this device
-            coordinator = MainCoordinator(hass, pico_ip, pin, manager)
+            coordinator = MainCoordinator(hass, client)
 
             # Perform initial data load with timeout
             async with asyncio.timeout(30):
@@ -83,7 +85,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             # Check if we got data
             if not coordinator.data:
                 _LOGGER.error("Failed to fetch initial data from device %s", pico_ip)
-                continue
+                continue  # Skip this device but continue with others
 
             # Store coordinator in our list
             hass.data[DOMAIN]["coordinators"].append(coordinator)
@@ -96,7 +98,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             )
             continue
         except Exception as err:
-            _LOGGER.error("Error setting up device %s: %s", pico_ip, err)
+            _LOGGER.error("Error setting up device %s: %s", pico_ip, err, exc_info=True)
             continue
 
     # Check if we have at least one successful coordinator
@@ -107,10 +109,8 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
     # Load platforms using discovery
     for platform in PLATFORMS:
-        hass.async_create_task(
-            discovery.async_load_platform(
-                hass, platform, DOMAIN, {}, config
-            )
+        await discovery.async_load_platform(
+            hass, platform, DOMAIN, {}, config
         )
 
     _LOGGER.info("Successfully set up %s with %d device(s)",

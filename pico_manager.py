@@ -1,79 +1,73 @@
-"""Shared PicoClient manager for multiple devices."""
+"""Shared socket manager for multiple Pico devices."""
+import asyncio
 import logging
-from typing import Dict
 
 from .open_pico_local_api.pico_client import PicoClient
+from .open_pico_local_api.utils.pico_protocol import PicoProtocol
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class PicoClientManager:
-    """Manages a single PicoClient instance shared across all devices."""
+    """Manages shared UDP socket for multiple Pico devices."""
 
     _instance = None
-    _client: PicoClient | None = None
-    _devices: Dict[str, str] = {}  # ip -> pin mapping
+    _transport = None
+    _protocol = None
+    _response_queue = None
 
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    async def add_device(self, ip: str, pin: str) -> None:
-        """Add a device to be managed."""
-        self._devices[ip] = pin
+    async def initialize(self):
+        """Initialize shared UDP socket."""
+        if self._transport is not None:
+            return
 
-        # Initialize the client on first device
-        if self._client is None:
-            _LOGGER.debug("Initializing shared PicoClient on port 40069")
-            # Use the first device's config to initialize
-            self._client = PicoClient(
-                ip=ip,  # This will be overridden per request
-                pin=pin,
-                device_port=40070,
-                local_port=40069,  # Shared port for all devices
-                timeout=15,
-                retry_attempts=3,
-                retry_delay=2.0,
-                verbose=True,
-                auto_reconnect=True,
-                max_reconnect_attempts=3,
-                reconnect_delay=2.0
-            )
-            await self._client.connect()
-            _LOGGER.debug("Shared PicoClient connected")
+        loop = asyncio.get_running_loop()
+        self._response_queue = asyncio.Queue()
 
-    async def get_status(self, ip: str):
-        """Get status for a specific device."""
-        if self._client is None:
-            raise RuntimeError("PicoClient not initialized")
+        self._transport, self._protocol = await loop.create_datagram_endpoint(
+            lambda: PicoProtocol(self._response_queue, {}, False),
+            local_addr=("0.0.0.0", 40069)
+        )
+        _LOGGER.debug("Initialized shared UDP socket on port 40069")
 
-        # Update client IP and PIN for this request
-        self._client.ip = ip
-        self._client.pin = self._devices.get(ip, "")
+    def create_client(self, ip: str, pin: str) -> PicoClient:
+        """Create a PicoClient that uses the shared socket."""
+        if self._transport is None:
+            raise RuntimeError("Manager not initialized")
 
-        return await self._client.get_status(retry=True)
+        # Create client with shared transport
+        client = PicoClient(
+            ip=ip,
+            pin=pin,
+            device_port=40070,
+            local_port=40069,
+            timeout=15,
+            retry_attempts=3,
+            retry_delay=2.0,
+            verbose=True,
+            auto_reconnect=True,
+            max_reconnect_attempts=3,
+            reconnect_delay=2.0,
+            shared_transport=self._transport,
+            shared_protocol=self._protocol,
+        )
 
-    async def send_command(self, ip: str, command_method, *args, **kwargs):
-        """Send a command to a specific device."""
-        if self._client is None:
-            raise RuntimeError("PicoClient not initialized")
+        # Override response queue to use shared one
+        client._response_queue = self._response_queue
 
-        # Update client IP and PIN for this request
-        self._client.ip = ip
-        self._client.pin = self._devices.get(ip, "")
+        _LOGGER.debug("Created client for device %s", ip)
+        return client
 
-        return await command_method(*args, **kwargs)
-
-    async def shutdown(self) -> None:
-        """Shutdown the shared client."""
-        if self._client and self._client.connected:
-            await self._client.disconnect()
-            _LOGGER.debug("Shared PicoClient disconnected")
-        self._client = None
-        self._devices.clear()
-
-    @property
-    def connected(self) -> bool:
-        """Check if client is connected."""
-        return self._client is not None and self._client.connected
+    async def shutdown(self):
+        """Shutdown manager."""
+        if self._transport:
+            self._transport.close()
+            self._transport = None
+        self._response_queue = None
+        self._protocol = None
+        _LOGGER.debug("Shutdown complete")
