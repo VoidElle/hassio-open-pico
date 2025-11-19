@@ -1,135 +1,184 @@
-"""DataUpdateCoordinator for our integration."""
+"""DataUpdateCoordinator for Open Pico integration."""
 
 from datetime import timedelta
 import logging
 from typing import Any
 
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import (
-    CONF_PASSWORD,
-    CONF_SCAN_INTERVAL,
-    CONF_USERNAME, CONF_PIN,
-)
-from homeassistant.core import DOMAIN, HomeAssistant
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .utils.parsers import parse_common_device_into_readable_obj
-from .api import APIUnauthorizedError
-from .managers.token_manager import GlobalTokenRepository
-from .api import API, APIConnectionError
-from .const import DEFAULT_SCAN_INTERVAL
+from .open_pico_local_api.models.pico_device_model import PicoDeviceModel
+from .open_pico_local_api.enums.device_mode_enum import DeviceModeEnum
+
+from .pico_manager import PicoClientManager
+from .const import DEFAULT_SCAN_INTERVAL, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class MainCoordinator(DataUpdateCoordinator):
-    """The main coordinator"""
+    """The main coordinator for Open Pico devices."""
 
-    data: list[dict[str, Any]]
+    data: PicoDeviceModel | None
 
-    def __init__(self, hass: HomeAssistant, config_entry: ConfigEntry) -> None:
-        """Initialize coordinator."""
+    def __init__(self, hass: HomeAssistant, pico_ip: str, pin: str, manager: PicoClientManager) -> None:
+        """Initialize coordinator from YAML config."""
 
-        self.user = config_entry.data[CONF_USERNAME]
-        self.pwd = config_entry.data[CONF_PASSWORD]
-        self.pin = config_entry.data[CONF_PIN]
-
-        # set variables from options
-        self.poll_interval = config_entry.options.get(
-            CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
-        )
+        # Store the pico IP and PIN
+        self.pico_ip = pico_ip
+        self.pin = pin
+        self.manager = manager
 
         # Initialize DataUpdateCoordinator
         super().__init__(
             hass,
             _LOGGER,
-            name=f"{DOMAIN} ({config_entry.unique_id})",
+            name=f"{DOMAIN} ({pico_ip})",
             update_method=self.async_update_data,
-            update_interval=timedelta(seconds=self.poll_interval),
+            update_interval=timedelta(seconds=DEFAULT_SCAN_INTERVAL),
         )
 
-        # Initialise your api here and make available to your integration.
-        self.api = API(hass=hass, user=self.user, pwd=self.pwd, pin=self.pin)
-
-    async def async_update_data(self):
-        """Fetch data from API endpoint"""
+    async def async_update_data(self) -> PicoDeviceModel:
+        """Fetch data from API endpoint."""
         try:
+            _LOGGER.debug("Starting data update for device %s", self.pico_ip)
 
-            # If no token is saved, we execute a new login request before
-            # calling the retrival of the devices statuses
-            if GlobalTokenRepository.token is None:
-                await self.hass.async_add_executor_job(self.api.execute_login)
+            # Get the device status via shared manager
+            status = await self.manager.get_status(self.pico_ip)
 
-            # Retrieve the devices statuses
-            try:
+            if status is None:
+                raise UpdateFailed("Failed to get device status")
 
-                # Retrieve the new devices status from the API
-                new_data_to_parse = await self.hass.async_add_executor_job(self.api.get_updated_devices_statuses)
+            _LOGGER.debug(
+                "Device %s status: ON=%s, Mode=%s, Temp=%.1f°C, Humidity=%.1f%%",
+                self.pico_ip,
+                status.is_on,
+                status.operating.mode.name,
+                status.sensors.temperature,
+                status.sensors.humidity
+            )
 
-                # For every retrieved device, we need to retrieve its details
-                for device in new_data_to_parse:
+            return status
 
-                    # Retrieve the details of the current device
-                    device_details = await self.hass.async_add_executor_job(self.api.get_device_details, device.serial, self.pin)
-
-                    # We log the retrieved device's details
-                    _LOGGER.debug(f"{device.serial} - DETAILS")
-                    _LOGGER.debug(device_details.to_json())
-
-                    # We set the device details inside the device DTO for future usage
-                    device.details = device_details
-
-                # Log the devices not parsed in a readable way for Home Assistant
-                _LOGGER.debug("NEW DATA - NOT PARSED")
-                _LOGGER.debug(new_data_to_parse)
-
-                # Parse the data in a readable way for Home Assistant
-                new_data_parsed = parse_common_device_into_readable_obj(new_data_to_parse)
-
-                # Log the devices parsed in a readable way from Home Assistant
-                _LOGGER.debug("NEW DATA - PARSED")
-                _LOGGER.debug(new_data_parsed)
-
-                # Set the new parsed data in the state
-                data = new_data_parsed
-
-            # API Unauthorized error handling
-            #
-            # In case of an API unauthorized error, it is likely a token expired / no more valid
-            # issue. In order to be sure to have a valid / fresh token. We remove it and remake the request.
-            # This will execute the same request, but before doing it, a new login request will be made
-            except APIUnauthorizedError as err:
-                _LOGGER.error(f"An authorization error occurred ({err}), removing the token to execute a new login in the next request")
-                GlobalTokenRepository.token = None
-                return await self.async_update_data()
-
-            # Default error handling
-            except Exception as err:
-                _LOGGER.debug("Error on Login request: %s", err)
-                raise UpdateFailed(err) from err
-
-        except APIConnectionError as err:
-            _LOGGER.error(err)
-            raise UpdateFailed(err) from err
         except Exception as err:
-            # This will show entities as unavailable by raising UpdateFailed exception
-            raise UpdateFailed(f"Error communicating with API: {err}") from err
+            _LOGGER.error("Error communicating with device %s: %s", self.pico_ip, err, exc_info=True)
+            raise UpdateFailed(f"Error communicating with device: {err}") from err
 
-        # What is returned here is stored in self.data by the DataUpdateCoordinator
-        return data
+    async def async_shutdown(self) -> None:
+        """Shutdown is handled by the manager."""
+        pass
 
-    def get_device(self, device_id: int) -> dict[str, Any]:
-        """Get a device entity from our api data."""
-        try:
-            return [
-                devices for devices in self.data if devices["device_id"] == device_id
-            ][0]
-        except (TypeError, IndexError):
-            # In this case if the device id does not exist you will get an IndexError.
-            # If api did not return any data, you will get TypeError.
-            return None
+    # Helper properties for entities
+    @property
+    def is_on(self) -> bool:
+        """Check if device is on."""
+        return self.data.is_on if self.data else False
 
-    def get_device_parameter(self, device_id: int, parameter: str) -> Any:
-        """Get the parameter value of one of our devices from our api data."""
-        if device := self.get_device(device_id):
-            return device.get(parameter)
+    @property
+    def temperature(self) -> float:
+        """Get current temperature."""
+        return self.data.sensors.temperature if self.data else 0.0
+
+    @property
+    def humidity(self) -> float:
+        """Get current humidity."""
+        return self.data.sensors.humidity if self.data else 0.0
+
+    @property
+    def current_mode(self) -> DeviceModeEnum | None:
+        """Get current operating mode."""
+        return self.data.operating.mode if self.data else None
+
+    @property
+    def fan_speed(self) -> int:
+        """Get current fan speed percentage."""
+        return self.data.operating.speed_row if self.data else 0
+
+    @property
+    def night_mode_enabled(self) -> bool:
+        """Check if night mode is enabled."""
+        return self.data.operating.night_mode == 1 if self.data else False
+
+    @property
+    def supports_fan_speed(self) -> bool:
+        """Check if device supports fan speed control."""
+        return self.data.support_fan_speed_control if self.data else False
+
+    @property
+    def supports_night_mode(self) -> bool:
+        """Check if device supports night mode."""
+        return self.data.support_night_mode_toggle if self.data else False
+
+    @property
+    def supports_target_humidity(self) -> bool:
+        """Check if device supports target humidity selection."""
+        return self.data.support_target_humidity_selection if self.data else False
+
+    # Control methods
+    async def async_turn_on(self) -> None:
+        """Turn the device on."""
+        await self.manager.send_command(
+            self.pico_ip,
+            self.manager._client.turn_on,
+            retry=True
+        )
+        await self.async_request_refresh()
+
+    async def async_turn_off(self) -> None:
+        """Turn the device off."""
+        await self.manager.send_command(
+            self.pico_ip,
+            self.manager._client.turn_off,
+            retry=True
+        )
+        await self.async_request_refresh()
+
+    async def async_set_mode(self, mode: DeviceModeEnum | int) -> None:
+        """Set operating mode."""
+        await self.manager.send_command(
+            self.pico_ip,
+            self.manager._client.change_operating_mode,
+            mode,
+            retry=True
+        )
+        await self.async_request_refresh()
+
+    async def async_set_fan_speed(self, percentage: int) -> None:
+        """Set fan speed percentage."""
+        await self.manager.send_command(
+            self.pico_ip,
+            self.manager._client.change_fan_speed,
+            percentage,
+            retry=True
+        )
+        await self.async_request_refresh()
+
+    async def async_set_night_mode(self, enable: bool) -> None:
+        """Set night mode."""
+        await self.manager.send_command(
+            self.pico_ip,
+            self.manager._client.set_night_mode,
+            enable,
+            retry=True
+        )
+        await self.async_request_refresh()
+
+    async def async_set_led_status(self, enable: bool) -> None:
+        """Set LED status."""
+        await self.manager.send_command(
+            self.pico_ip,
+            self.manager._client.set_led_status,
+            enable,
+            retry=True
+        )
+        await self.async_request_refresh()
+
+    async def async_set_target_humidity(self, target: int) -> None:
+        """Set target humidity."""
+        await self.manager.send_command(
+            self.pico_ip,
+            self.manager._client.set_target_humidity,
+            target,
+            retry=True
+        )
+        await self.async_request_refresh()

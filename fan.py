@@ -1,50 +1,43 @@
-"""Fan setup for our Integration."""
-import json
+"""Fan platform for Open Pico integration."""
 import logging
 
 from homeassistant.components.fan import FanEntity, FanEntityFeature
-from homeassistant.const import CONF_PIN
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.typing import ConfigType
 
-from .utils.parsers import parse_device_mode_from_preset_to_int
-from .utils.device_commands import get_on_off_command, get_change_mode_command, get_change_speed_command
-from .const import PRESET_MODES, MODULAR_FAN_SPEED_PRESET_MODES
-from . import MyConfigEntry
+from .open_pico_local_api.enums.device_mode_enum import DeviceModeEnum
+
+from .const import DOMAIN, MODE_INT_TO_PRESET, MODE_PRESET_TO_INT
 from .base import BaseEntity
 from .coordinator import MainCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
 
-async def async_setup_entry(
+async def async_setup_platform(
     hass: HomeAssistant,
-    config_entry: MyConfigEntry,
+    config: ConfigType,
     async_add_entities: AddEntitiesCallback,
+    discovery_info=None,
 ):
+    """Set up the Fan platform from YAML."""
 
-    """Set up the Fans."""
+    # Get all coordinators from hass.data
+    coordinators = hass.data[DOMAIN]["coordinators"]
 
-    coordinator: MainCoordinator = config_entry.runtime_data.coordinator
-    device_pin = config_entry.data.get(CONF_PIN)
-
-    # Fans
+    # Create a fan entity for each coordinator/device
     fans = [
-        Fan(coordinator, device, "state", device_pin)
-        for device in coordinator.data
-        if device.get("device_type") == "FAN"
+        PicoFan(coordinator, idx)
+        for idx, coordinator in enumerate(coordinators)
     ]
 
-    # Create the fans.
     async_add_entities(fans)
 
 
-class Fan(BaseEntity, FanEntity):
-
-    def __init__(self, coordinator, device, parameter, pin: str):
-        super().__init__(coordinator, device, parameter)
-        self.pin = pin
+class PicoFan(BaseEntity, FanEntity):
+    """Representation of a Pico Fan."""
 
     _attr_supported_features = (
         FanEntityFeature.TURN_ON |
@@ -53,39 +46,46 @@ class Fan(BaseEntity, FanEntity):
         FanEntityFeature.SET_SPEED
     )
 
-    # The device API parameter for mode
-    _mode_parameter = "mode"
+    _attr_translation_key = "pico_fan"
 
-    # Define available preset modes
-    _attr_preset_modes = PRESET_MODES
+    def __init__(self, coordinator: MainCoordinator, device_index: int):
+        """Initialize the fan."""
+        super().__init__(coordinator, device_index)
 
-    _attr_translation_key = "pico"
+        # Set unique_id based on IP address
+        self._attr_unique_id = f"{DOMAIN}_fan_{coordinator.pico_ip.replace('.', '_')}"
+        self._attr_name = "Fan"
+
+    @property
+    def preset_modes(self) -> list[str]:
+        """Return available preset modes."""
+        return list(MODE_PRESET_TO_INT.keys())
 
     @property
     def is_on(self) -> bool | None:
-        return (
-            self.coordinator.get_device_parameter(self.device_id, self.parameter)
-            == "ON"
-        )
+        """Return true if the fan is on."""
+        return self.coordinator.is_on
 
     @property
     def preset_mode(self) -> str | None:
-        """Return the current mode."""
-        mode = self.coordinator.get_device_parameter(self.device_id, self._mode_parameter)
-        return mode if mode in self.preset_modes else None
+        """Return the current preset mode."""
+        if not self.coordinator.data:
+            return None
+
+        # Get the current mode enum value (int)
+        mode_int = int(self.coordinator.current_mode)
+
+        # Convert to preset string
+        return MODE_INT_TO_PRESET.get(mode_int)
 
     @property
     def speed_count(self) -> int:
         """Return the speed count based on current preset mode."""
+        if not self.coordinator.data:
+            return 1
 
-        # Retrieve the current mode
-        current_mode = self.preset_mode
-
-        # Retrieve if night mode is enabled
-        night_mode_enabled = self.coordinator.get_device_parameter(self.device_id, "night_mode") == "ON"
-
-        # If the current mode supports speed percentage control, and it is not in night mode, return 100
-        if current_mode in MODULAR_FAN_SPEED_PRESET_MODES and not night_mode_enabled:
+        # If the current mode supports speed percentage control and not in night mode
+        if self.coordinator.supports_fan_speed and not self.coordinator.night_mode_enabled:
             return 100
         else:
             return 1
@@ -93,122 +93,89 @@ class Fan(BaseEntity, FanEntity):
     @property
     def percentage(self) -> int | None:
         """Return the current speed percentage."""
-
-        # Retrieve the current mode
-        current_mode = self.preset_mode
-
-        # Retrieve the raw speed value
-        raw_speed = self.coordinator.get_device_parameter(self.device_id, "speed")
-        if raw_speed is None:
+        if not self.coordinator.data:
             return None
 
-        # Retrieve if night mode is enabled
-        night_mode_enabled = self.coordinator.get_device_parameter(self.device_id, "night_mode") == "ON"
-
-        # Return the percentage only if the current mode supports its control and night mode is not enabled
-        if current_mode in MODULAR_FAN_SPEED_PRESET_MODES and not night_mode_enabled:
-            return int(raw_speed * 100 / self._attr_speed_count)
+        # Return the percentage only if the mode supports it and night mode is not enabled
+        if self.coordinator.supports_fan_speed and not self.coordinator.night_mode_enabled:
+            return self.coordinator.fan_speed
         else:
             return 100 if self.is_on else 0
 
-    # Function that will be called when a percentage is set to the device
     async def async_set_percentage(self, percentage: int) -> None:
-
         """Set speed based on percentage slider."""
         if percentage == 0:
             await self.async_turn_off()
             return
 
-        # We turn on the device if it is currently off
-        if self.device.get("state") == "OFF":
+        # Turn on the device if it's currently off
+        if not self.is_on:
             await self.async_turn_on()
 
-        # Make only set the fan's speed percentage in presets that support it
-        current_mode = self.device.get("mode")
-        if current_mode not in MODULAR_FAN_SPEED_PRESET_MODES:
+        # Check if current mode supports fan speed control
+        if not self.coordinator.supports_fan_speed:
+            current_mode = self.preset_mode
             raise HomeAssistantError(
-                translation_domain="open_pico",
-                translation_key="errors.unsupported_mode",
-                translation_placeholders={"mode": current_mode},
+                f"Current mode '{current_mode}' does not support fan speed control"
             )
 
-        # Execute the set percentage command
-        device_name = self.device.get("device_name")
-        device_serial = self.device.get("device_uid")
-        device_pin = self.pin
+        # Check if night mode is enabled
+        if self.coordinator.night_mode_enabled:
+            raise HomeAssistantError(
+                "Cannot set fan speed while night mode is enabled"
+            )
 
-        command_to_send = get_change_speed_command(percentage, device_pin)
-        command_to_send_dumped = json.dumps(command_to_send)
-
-        await self.hass.async_add_executor_job(
-            self.coordinator.api.execute_command, device_name, device_serial, device_pin, command_to_send_dumped
-        )
-
-        self.device["speed"] = percentage
-
-        await self.coordinator.async_refresh()
+        # Set the fan speed
+        try:
+            await self.coordinator.async_set_fan_speed(percentage)
+        except Exception as err:
+            _LOGGER.error("Failed to set fan speed: %s", err)
+            raise HomeAssistantError(f"Failed to set fan speed: {err}") from err
 
     async def async_set_preset_mode(self, preset_mode: str) -> None:
-        """Set a new mode."""
-
+        """Set a new preset mode."""
         if preset_mode not in self.preset_modes:
             raise ValueError(f"Invalid mode: {preset_mode}")
 
-        device_name = self.device.get("device_name")
-        device_serial = self.device.get("device_uid")
-        device_pin = self.pin
+        # Convert preset mode string to int
+        mode_int = MODE_PRESET_TO_INT.get(preset_mode)
+        if mode_int is None:
+            raise ValueError(f"Unknown preset mode: {preset_mode}")
 
-        parsed_preset_mode_to_int = parse_device_mode_from_preset_to_int(preset_mode)
-        command_preset_mode_to_send = get_change_mode_command(parsed_preset_mode_to_int, device_pin)
-        command_preset_mode_to_send_dumped = json.dumps(command_preset_mode_to_send)
+        try:
+            # Convert int to DeviceModeEnum
+            mode_enum = DeviceModeEnum(mode_int)
+            await self.coordinator.async_set_mode(mode_enum)
+        except Exception as err:
+            _LOGGER.error("Failed to set preset mode: %s", err)
+            raise HomeAssistantError(f"Failed to set preset mode: {err}") from err
 
-        await self.hass.async_add_executor_job(
-            self.coordinator.api.execute_command, device_name, device_serial, device_pin, command_preset_mode_to_send_dumped
-        )
-
-        await self.coordinator.async_refresh()
-
-    # Function that will be called when the device is TURNED ON
-    async def async_turn_on(self, percentage: int | None = None, preset_mode: str | None = None, **kwargs):
-
+    async def async_turn_on(
+        self,
+        percentage: int | None = None,
+        preset_mode: str | None = None,
+        **kwargs
+    ) -> None:
         """Turn on the fan."""
+        try:
+            await self.coordinator.async_turn_on()
 
-        device_name = self.device.get("device_name")
-        device_serial = self.device.get("device_uid")
-        device_pin = self.pin
+            # If a preset mode is specified, set it after turning on
+            if preset_mode and preset_mode in self.preset_modes:
+                await self.async_set_preset_mode(preset_mode)
 
-        command_to_send_to_parse = get_on_off_command(True, device_pin)
-        command_to_send_parsed = json.dumps(command_to_send_to_parse)
+            # If a percentage is specified, set it after turning on
+            if percentage is not None and percentage > 0:
+                await self.async_set_percentage(percentage)
 
-        await self.hass.async_add_executor_job(
-            self.coordinator.api.execute_command, device_name, device_serial, device_pin, command_to_send_parsed
-        )
+        except Exception as err:
+            _LOGGER.error("Failed to turn on fan: %s", err)
+            raise HomeAssistantError(f"Failed to turn on fan: {err}") from err
 
-        # If a preset mode is specified, set it
-        if preset_mode and preset_mode in self.preset_modes:
-
-            parsed_preset_mode_to_int = parse_device_mode_from_preset_to_int(preset_mode)
-            command_preset_mode_to_send = get_change_mode_command(parsed_preset_mode_to_int, device_pin)
-            command_preset_mode_to_send_dumped = json.dumps(command_preset_mode_to_send)
-
-            await self.hass.async_add_executor_job(
-                self.coordinator.api.execute_command, device_name, device_serial, device_pin, command_preset_mode_to_send_dumped
-            )
-
-        await self.coordinator.async_refresh()
-
-    # Function that will be called when the device is TURNED OFF
-    async def async_turn_off(self, **kwargs):
-
-        device_name = self.device.get("device_name")
-        device_serial = self.device.get("device_uid")
-        device_pin = self.pin
-
-        command_to_send_to_parse = get_on_off_command(False, device_pin)
-        command_to_send_parsed = json.dumps(command_to_send_to_parse)
-
-        await self.hass.async_add_executor_job(
-            self.coordinator.api.execute_command, device_name, device_serial, device_pin, command_to_send_parsed
-        )
-
-        await self.coordinator.async_refresh()
+    async def async_turn_off(self, **kwargs) -> None:
+        """Turn off the fan."""
+        try:
+            await self.coordinator.async_turn_off()
+        except Exception as err:
+            _LOGGER.error("Failed to turn off fan: %s", err)
+            raise HomeAssistantError(f"Failed to turn off fan: {err}") from err
