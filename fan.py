@@ -46,7 +46,7 @@ class PicoFan(BaseEntity, FanEntity):
         FanEntityFeature.SET_SPEED
     )
 
-    _attr_translation_key = "pico_fan"
+    _attr_translation_key = "pico"
 
     def __init__(self, coordinator: MainCoordinator, device_index: int):
         """Initialize the fan."""
