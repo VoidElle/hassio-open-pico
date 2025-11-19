@@ -137,7 +137,6 @@ class PicoSupportsNightModeSwitch(BaseEntity, SwitchEntity):
 
     _attr_translation_key = "supports_night_mode"
     _attr_device_class = SwitchDeviceClass.SWITCH
-    _attr_entity_registry_enabled_default = False  # Disabled by default
 
     def __init__(self, coordinator: MainCoordinator, device_index: int):
         """Initialize the switch."""
@@ -165,7 +164,6 @@ class PicoSupportsTargetHumiditySwitch(BaseEntity, SwitchEntity):
 
     _attr_translation_key = "supports_target_humidity"
     _attr_device_class = SwitchDeviceClass.SWITCH
-    _attr_entity_registry_enabled_default = False  # Disabled by default
 
     def __init__(self, coordinator: MainCoordinator, device_index: int):
         """Initialize the switch."""

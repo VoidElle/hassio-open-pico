@@ -2,7 +2,7 @@
 
 DOMAIN = "open_pico"
 
-DEFAULT_SCAN_INTERVAL = 5
+DEFAULT_SCAN_INTERVAL = 10
 
 # Device mode mapping - single source of truth
 MODE_INT_TO_PRESET = {
