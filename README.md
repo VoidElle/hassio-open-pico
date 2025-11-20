@@ -16,6 +16,9 @@ This integration took inspiration from:
 - The official [Tecnosystemi](https://play.google.com/store/apps/details?id=it.tecnosystemi.TS&hl=it) mobile application
 - My own reverse engineered POC mobile application [Open Pico](https://github.com/VoidElle/open-pico-app)
 
+> [!CAUTION]
+> **This integration uses cloud polling.** Even though I have developed [open-pico-local-api](https://github.com/VoidElle/open-pico-local-api), Pico's firmware has limitations that makes multiple devices handling not compatible for being implemented in systems like Home Asssistant. Read the API's documentation for more information about it.
+
 ## Installation 📦
 ### Via HACS (Recommended) ⭐
 [![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=VoidElle&repository=hassio-open-pico&category=integration)
