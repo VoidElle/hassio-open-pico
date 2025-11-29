@@ -1,17 +1,19 @@
+"""Open Pico integration for Home Assistant."""
 from __future__ import annotations
 
-from collections.abc import Callable
-from dataclasses import dataclass
+import asyncio
 import logging
+import voluptuous as vol
 
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ConfigEntryNotReady
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+from homeassistant.helpers import config_validation as cv, discovery
+from homeassistant.helpers.typing import ConfigType
 
 from .const import DOMAIN
 from .coordinator import MainCoordinator
+from .pico_manager import PicoClientManager
+
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -22,84 +24,201 @@ PLATFORMS: list[Platform] = [
     Platform.SELECT,
 ]
 
-type MyConfigEntry = ConfigEntry[RuntimeData]
+# Define the device schema
+DEVICE_SCHEMA = vol.Schema({
+    vol.Required("ip"): cv.string,
+    vol.Required("pin"): cv.string,
+    vol.Optional("name"): cv.string,  # Optional friendly name
+})
+
+# Define your YAML configuration schema
+CONFIG_SCHEMA = vol.Schema(
+    {
+        DOMAIN: vol.Schema({
+            vol.Required("devices"): vol.All(cv.ensure_list, [DEVICE_SCHEMA]),
+            vol.Optional("local_port", default=40069): cv.port,
+            vol.Optional("verbose", default=False): cv.boolean,
+        })
+    },
+    extra=vol.ALLOW_EXTRA,
+)
 
 
-@dataclass
-class RuntimeData:
-    """Class to hold your data."""
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Set up the Open Pico integration from YAML configuration."""
 
-    coordinator: DataUpdateCoordinator
-    cancel_update_listener: Callable
+    # Check if domain is in config
+    if DOMAIN not in config:
+        return True
 
+    # Get your domain's configuration from configuration.yaml
+    domain_config = config[DOMAIN]
+    devices = domain_config.get("devices", [])
+    local_port = domain_config.get("local_port", 40069)
+    verbose = domain_config.get("verbose", False)
 
-async def async_setup_entry(hass: HomeAssistant, config_entry: MyConfigEntry) -> bool:
+    _LOGGER.info("Setting up %s with %d device(s)", DOMAIN, len(devices))
 
-    # ----------------------------------------------------------------------------
-    # Initialise the coordinator that manages data updates from your api.
-    # This is defined in coordinator.py
-    # ----------------------------------------------------------------------------
-    coordinator = MainCoordinator(hass, config_entry)
+    # Initialize hass.data for this domain
+    hass.data.setdefault(DOMAIN, {})
+    hass.data[DOMAIN]["coordinators"] = []
+    hass.data[DOMAIN]["config"] = domain_config
 
-    # ----------------------------------------------------------------------------
-    # Perform an initial data load from api.
-    # async_config_entry_first_refresh() is special in that it does not log errors
-    # if it fails.
-    # ----------------------------------------------------------------------------
-    await coordinator.async_config_entry_first_refresh()
+    # Create shared PicoClient manager
+    manager = PicoClientManager(local_port=local_port, verbose=verbose)
 
-    # ----------------------------------------------------------------------------
-    # Test to see if api initialised correctly, else raise ConfigNotReady to make
-    # HA retry setup.
-    # ----------------------------------------------------------------------------
-    if not coordinator.data:
-        raise ConfigEntryNotReady
+    try:
+        await manager.initialize()
+        hass.data[DOMAIN]["manager"] = manager
+        _LOGGER.info("Shared transport initialized on port %d", local_port)
+    except Exception as err:
+        _LOGGER.error("Failed to initialize shared transport: %s", err, exc_info=True)
+        return False
 
-    # ----------------------------------------------------------------------------
-    # Initialise a listener for config flow options changes.
-    # This will be removed automatically if the integration is unloaded.
-    # See config_flow for defining an options setting that shows up as configure
-    # on the integration.
-    # ----------------------------------------------------------------------------
-    cancel_update_listener = config_entry.async_on_unload(
-        config_entry.add_update_listener(_async_update_listener)
+    # Create clients and coordinators for each device
+    successful_devices = 0
+    for idx, device_config in enumerate(devices):
+        pico_ip = device_config.get("ip")
+        pin = device_config.get("pin")
+        device_name = device_config.get("name", f"Pico Device {idx + 1}")
+
+        _LOGGER.debug("Setting up device '%s': ip=%s", device_name, pico_ip)
+
+        try:
+            # Create client with shared socket
+            device_id = f"pico_{pico_ip.replace('.', '_')}"
+            client = manager.create_client(
+                ip=pico_ip,
+                pin=pin,
+                device_id=device_id,
+                timeout=15,
+                retry_attempts=3,
+                retry_delay=2.0
+            )
+
+            # Connect to device
+            await client.connect()
+            _LOGGER.debug("Connected to device '%s' at %s", device_name, pico_ip)
+
+            # Initialize the coordinator for this device
+            coordinator = MainCoordinator(hass, client, device_name)
+
+            # Perform initial data load with timeout
+            try:
+                async with asyncio.timeout(30):
+                    await coordinator.async_config_entry_first_refresh()
+            except asyncio.TimeoutError:
+                _LOGGER.error(
+                    "Timeout during initial refresh for device '%s' (%s). "
+                    "Check if device is reachable and PIN is correct.",
+                    device_name, pico_ip
+                )
+                await client.disconnect()
+                continue
+
+            # Check if we got data
+            if not coordinator.data:
+                _LOGGER.error("Failed to fetch initial data from device '%s' (%s)", device_name, pico_ip)
+                await client.disconnect()
+                continue
+
+            # Store coordinator in our list
+            hass.data[DOMAIN]["coordinators"].append(coordinator)
+            successful_devices += 1
+
+            _LOGGER.info(
+                "Successfully set up device '%s' (%s): Mode=%s, Temp=%.1f°C, Humidity=%.1f%%",
+                device_name,
+                pico_ip,
+                coordinator.data.operating.mode.name,
+                coordinator.data.sensors.temperature,
+                coordinator.data.sensors.humidity
+            )
+
+        except Exception as err:
+            _LOGGER.error(
+                "Error setting up device '%s' (%s): %s",
+                device_name, pico_ip, err, exc_info=True
+            )
+            continue
+
+    # Check if we have at least one successful coordinator
+    if successful_devices == 0:
+        _LOGGER.error("No devices were successfully set up")
+        await manager.shutdown()
+        return False
+
+    _LOGGER.info(
+        "Successfully set up %s with %d/%d device(s)",
+        DOMAIN, successful_devices, len(devices)
     )
 
-    # ----------------------------------------------------------------------------
-    # Add the coordinator and update listener to your config entry to make
-    # accessible throughout your integration
-    # ----------------------------------------------------------------------------
-    config_entry.runtime_data = RuntimeData(coordinator, cancel_update_listener)
+    # Load platforms using discovery
+    for platform in PLATFORMS:
+        hass.async_create_task(
+            discovery.async_load_platform(
+                hass, platform, DOMAIN, {}, config
+            )
+        )
 
-    # ----------------------------------------------------------------------------
-    # Setup platforms (based on the list of entity types in PLATFORMS defined above)
-    # This calls the async_setup method in each of your entity type files.
-    # ----------------------------------------------------------------------------
-    await hass.config_entries.async_forward_entry_setups(config_entry, PLATFORMS)
+    # Register services
+    async def handle_reset_idp(call):
+        """Handle the reset_idp service call."""
+        device_ip = call.data.get("device_ip")
 
-    # Return true to denote a successful setup.
+        if device_ip:
+            # Reset specific device
+            for coordinator in hass.data[DOMAIN]["coordinators"]:
+                if coordinator.pico_ip == device_ip:
+                    await coordinator.client.reset_idp()
+                    _LOGGER.info("IDP reset for device %s", device_ip)
+                    return
+            _LOGGER.error("Device with IP %s not found", device_ip)
+        else:
+            # Reset all devices
+            for coordinator in hass.data[DOMAIN]["coordinators"]:
+                await coordinator.client.reset_idp()
+            _LOGGER.info("IDP reset for all devices")
+
+    hass.services.async_register(
+        DOMAIN,
+        "reset_idp",
+        handle_reset_idp,
+        schema=vol.Schema({
+            vol.Optional("device_ip"): cv.string,
+        })
+    )
+
     return True
 
 
-async def _async_update_listener(hass: HomeAssistant, config_entry: ConfigEntry):
-    """Handle config options update.
+async def async_unload_entry(hass: HomeAssistant) -> bool:
+    """Unload the integration."""
+    _LOGGER.info("Unloading %s integration", DOMAIN)
 
-    Reload the integration when the options change.
-    Called from our listener created above.
-    """
-    await hass.config_entries.async_reload(config_entry.entry_id)
+    # Shutdown coordinators
+    if DOMAIN in hass.data and "coordinators" in hass.data[DOMAIN]:
+        for coordinator in hass.data[DOMAIN]["coordinators"]:
+            try:
+                await coordinator.async_shutdown()
+            except Exception as err:
+                _LOGGER.error("Error shutting down coordinator: %s", err)
 
+    # Shutdown the shared manager
+    if DOMAIN in hass.data and "manager" in hass.data[DOMAIN]:
+        try:
+            await hass.data[DOMAIN]["manager"].shutdown()
+            _LOGGER.info("Shared transport manager shut down successfully")
+        except Exception as err:
+            _LOGGER.error("Error shutting down manager: %s", err)
 
-async def async_unload_entry(hass: HomeAssistant, config_entry: MyConfigEntry) -> bool:
-    """Unload a config entry.
-
-    This is called when you remove your integration or shutdown HA.
-    If you have created any custom services, they need to be removed here too.
-    """
-
-    # Unload services
+    # Remove services if you have any
     for service in hass.services.async_services_for_domain(DOMAIN):
         hass.services.async_remove(DOMAIN, service)
 
-    # Unload platforms and return result
-    return await hass.config_entries.async_unload_platforms(config_entry, PLATFORMS)
+    # Clean up hass.data
+    if DOMAIN in hass.data:
+        hass.data.pop(DOMAIN)
+
+    _LOGGER.info("Successfully unloaded %s", DOMAIN)
+    return True
