@@ -113,7 +113,7 @@ class PicoFan(BaseEntity, FanEntity):
             await self.async_turn_on()
 
         # Check if current mode supports fan speed control
-        if not self.coordinator.supports_fan_speed:
+        if not self.coordinator.supports_fan_speed and percentage != 100:
             current_mode = self.preset_mode
             raise HomeAssistantError(
                 f"Current mode '{current_mode}' does not support fan speed control"

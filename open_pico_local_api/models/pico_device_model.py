@@ -4,11 +4,11 @@ from typing import Dict, Any
 from ..enums.device_mode_enum import DeviceModeEnum
 from ..enums.on_off_state_enum import OnOffStateEnum
 from ..enums.target_humidity_enum import TargetHumidityEnum
-from ..models.device_info_model import DeviceInfoModel
-from ..models.operating_parameters_model import OperatingParametersModel
-from ..models.parameter_arrays_model import ParameterArraysModel
-from ..models.sensor_readings_model import SensorReadingsModel
-from ..models.system_info_model import SystemInfoModel
+from .device_info_model import DeviceInfoModel
+from .operating_parameters_model import OperatingParametersModel
+from .parameter_arrays_model import ParameterArraysModel
+from .sensor_readings_model import SensorReadingsModel
+from .system_info_model import SystemInfoModel
 from ..utils.constants import MODULAR_FAN_SPEED_PRESET_MODES, HUMIDITY_SELECTOR_PRESET_MODES
 
 
