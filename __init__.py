@@ -106,12 +106,26 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             # Perform initial data load with timeout
             try:
                 async with asyncio.timeout(30):
-                    await coordinator.async_config_entry_first_refresh()
+                    await coordinator.async_refresh()
+
+                    # Check if refresh encountered an error
+                    if not coordinator.last_update_success:
+                        raise Exception(
+                            f"Initial refresh failed: {coordinator.last_exception}"
+                        )
+
             except asyncio.TimeoutError:
                 _LOGGER.error(
                     "Timeout during initial refresh for device '%s' (%s). "
                     "Check if device is reachable and PIN is correct.",
                     device_name, pico_ip
+                )
+                await client.disconnect()
+                continue
+            except Exception as err:
+                _LOGGER.error(
+                    "Initial refresh failed for device '%s' (%s): %s",
+                    device_name, pico_ip, err
                 )
                 await client.disconnect()
                 continue
