@@ -16,9 +16,6 @@ This integration took inspiration from:
 - The official [Tecnosystemi](https://play.google.com/store/apps/details?id=it.tecnosystemi.TS&hl=it) mobile application
 - My own reverse engineered POC mobile application [Open Pico](https://github.com/VoidElle/open-pico-app)
 
-> [!NOTE]
-> **Version 2.0.0+ uses local UDP communication** powered by [open-pico-local-api v2.1.0](https://github.com/VoidElle/open-pico-local-api), which introduces multi-device support via shared transport manager. This eliminates the previous firmware limitation and enables true local control with concurrent device polling!
-
 ## Installation 📦
 ### Via HACS (Recommended) ⭐
 [![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=VoidElle&repository=hassio-open-pico&category=integration)
