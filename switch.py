@@ -1,158 +1,186 @@
-"""Switch setup for our Integration."""
-import json
+"""Switch platform for Open Pico integration."""
 import logging
 
-from homeassistant.components.switch import SwitchEntity
-from homeassistant.const import CONF_PIN
+from homeassistant.components.switch import SwitchEntity, SwitchDeviceClass
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.typing import ConfigType
 
-from .utils.device_commands import get_set_night_mode_command, get_set_led_status_command
-from . import MyConfigEntry
+from .const import DOMAIN
 from .base import BaseEntity
 from .coordinator import MainCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
 
-async def async_setup_entry(
+async def async_setup_platform(
     hass: HomeAssistant,
-    config_entry: MyConfigEntry,
+    config: ConfigType,
     async_add_entities: AddEntitiesCallback,
+    discovery_info=None,
 ):
-    """Set up the Switches."""
+    """Set up the Switch platform from YAML."""
 
-    coordinator: MainCoordinator = config_entry.runtime_data.coordinator
-    device_pin = config_entry.data.get(CONF_PIN)
+    # Get all coordinators from hass.data
+    coordinators = hass.data[DOMAIN]["coordinators"]
 
-    # Define the switch types for FAN devices
-    switch_types = [
+    # Create switch entities for each coordinator/device
+    switches = []
+    for idx, coordinator in enumerate(coordinators):
+        switches.extend([
+            PicoNightModeSwitch(coordinator, idx),
+            PicoLEDStatusSwitch(coordinator, idx),
+            PicoSupportsNightModeSwitch(coordinator, idx),
+            PicoSupportsTargetHumiditySwitch(coordinator, idx),
+        ])
 
-        # Night mode switch
-        "night_mode",
-
-        # Switch to indicate if the currently selected mode supports night mode
-        "selected_mode_supports_night_mode",
-
-        # Switch to indicate if the currently selected mode supports target humidity control
-        "selected_mode_supports_target_humidity_control",
-
-        # LED status switch
-        "led_status",
-    ]
-
-    # Create switches
-    switches = [
-        Switch(coordinator, device, switch_type, device_pin)
-        for device in coordinator.data
-        if device.get("device_type") == "FAN"
-        for switch_type in switch_types
-    ]
-
-    # Create the switches.
     async_add_entities(switches)
 
 
-class Switch(BaseEntity, SwitchEntity):
-    """Representation of a Switch."""
+class PicoNightModeSwitch(BaseEntity, SwitchEntity):
+    """Representation of a Pico Night Mode Switch."""
 
-    def __init__(self, coordinator, device, parameter, pin: str):
-        super().__init__(coordinator, device, parameter)
-        self.pin = pin
+    _attr_translation_key = "night_mode"
+    _attr_device_class = SwitchDeviceClass.SWITCH
+
+    def __init__(self, coordinator: MainCoordinator, device_index: int):
+        """Initialize the switch."""
+        super().__init__(coordinator, device_index)
+
+        self._attr_unique_id = f"{DOMAIN}_night_mode_{coordinator.pico_ip.replace('.', '_')}"
+        self._attr_name = "Night Mode"
+
+    @property
+    def available(self) -> bool:
+        """Return if entity is available."""
+        # Only available if the device supports night mode
+        return (
+            super().available and
+            self.coordinator.supports_night_mode
+        )
 
     @property
     def is_on(self) -> bool | None:
-        """Return True if switch is on."""
-        valid_parameters = [
-            "night_mode",
-            "led_status",
-            "selected_mode_supports_night_mode",
-            "selected_mode_supports_target_humidity_control",
-        ]
-
-        if self.parameter in valid_parameters:
-            return self.device.get(self.parameter) == "ON"
-
-        return None
-
-    def handle_toggle_night_mode(self, new_status: bool) -> str | None:
-        """Toggle the night mode."""
-
-        # Return None if the current mode does not support night mode
-        if self.device.get("selected_mode_supports_night_mode") == "OFF":
-            return None
-
-        device_pin = self.pin
-
-        command_to_send = get_set_night_mode_command(new_status, device_pin)
-        return json.dumps(command_to_send)
-
-    def handle_toggle_led_status(self, new_status: bool) -> str:
-        """Toggle the LED status"""
-        device_pin = self.pin
-        command_to_send = get_set_led_status_command(new_status, device_pin)
-        return json.dumps(command_to_send)
-
+        """Return True if night mode is on."""
+        return self.coordinator.night_mode_enabled
 
     async def async_turn_on(self, **kwargs) -> None:
-        """Turn the switch on."""
+        """Turn night mode on."""
+        if not self.coordinator.supports_night_mode:
+            current_mode = self.coordinator.current_mode.name if self.coordinator.current_mode else "Unknown"
+            raise HomeAssistantError(
+                f"Current mode '{current_mode}' does not support night mode"
+            )
 
-        # Handle night mode turning ON
-        if self.parameter == "night_mode":
-            toggle_night_mode_cmd_nullable: str | None = self.handle_toggle_night_mode(True)
-            if toggle_night_mode_cmd_nullable is None:
-                current_mode = self.device.get("mode")
-                raise HomeAssistantError(
-                    translation_domain="open_pico",
-                    translation_key="errors.unsupported_mode",
-                    translation_placeholders={"mode": current_mode},
-                )
-            else:
-                cmd_to_execute = toggle_night_mode_cmd_nullable
-
-        # Handle LED status turning ON
-        else:
-            cmd_to_execute = self.handle_toggle_led_status(True)
-
-        # Execute the command
-        device_name = self.device.get("device_name")
-        device_serial = self.device.get("device_uid")
-        device_pin = self.pin
-
-        await self.hass.async_add_executor_job(
-            self.coordinator.api.execute_command, device_name, device_serial, device_pin, cmd_to_execute
-        )
-
-        await self.coordinator.async_refresh()
+        try:
+            await self.coordinator.async_set_night_mode(True)
+        except Exception as err:
+            _LOGGER.error("Failed to turn on night mode: %s", err)
+            raise HomeAssistantError(f"Failed to turn on night mode: {err}") from err
 
     async def async_turn_off(self, **kwargs) -> None:
-        """Turn the switch off."""
+        """Turn night mode off."""
+        if not self.coordinator.supports_night_mode:
+            current_mode = self.coordinator.current_mode.name if self.coordinator.current_mode else "Unknown"
+            raise HomeAssistantError(
+                f"Current mode '{current_mode}' does not support night mode"
+            )
 
-        # Handle night mode turning OFF
-        if self.parameter == "night_mode":
-            toggle_night_mode_cmd_nullable: str | None = self.handle_toggle_night_mode(False)
-            if toggle_night_mode_cmd_nullable is None:
-                current_mode = self.device.get("mode")
-                raise HomeAssistantError(
-                    translation_domain="open_pico",
-                    translation_key="errors.unsupported_mode",
-                    translation_placeholders={"mode": current_mode},
-                )
-            else:
-                cmd_to_execute = toggle_night_mode_cmd_nullable
+        try:
+            await self.coordinator.async_set_night_mode(False)
+        except Exception as err:
+            _LOGGER.error("Failed to turn off night mode: %s", err)
+            raise HomeAssistantError(f"Failed to turn off night mode: {err}") from err
 
-        # Handle LED status turning OFF
-        else:
-            cmd_to_execute = self.handle_toggle_led_status(False)
 
-        # Execute the command
-        device_name = self.device.get("device_name")
-        device_serial = self.device.get("device_uid")
-        device_pin = self.pin
+class PicoLEDStatusSwitch(BaseEntity, SwitchEntity):
+    """Representation of a Pico LED Status Switch."""
 
-        await self.hass.async_add_executor_job(
-            self.coordinator.api.execute_command, device_name, device_serial, device_pin, cmd_to_execute
-        )
+    _attr_translation_key = "led_status"
+    _attr_device_class = SwitchDeviceClass.SWITCH
 
-        await self.coordinator.async_refresh()
+    def __init__(self, coordinator: MainCoordinator, device_index: int):
+        """Initialize the switch."""
+        super().__init__(coordinator, device_index)
+
+        self._attr_unique_id = f"{DOMAIN}_led_status_{coordinator.pico_ip.replace('.', '_')}"
+        self._attr_name = "LED Status"
+
+    @property
+    def is_on(self) -> bool | None:
+        """Return True if LED is on."""
+        if not self.coordinator.data:
+            return None
+        # led_on_off_short: 1 = ON, 2 = OFF
+        return self.coordinator.data.operating.led_on_off_short == 1
+
+    async def async_turn_on(self, **kwargs) -> None:
+        """Turn LED on."""
+        try:
+            await self.coordinator.async_set_led_status(True)
+        except Exception as err:
+            _LOGGER.error("Failed to turn on LED: %s", err)
+            raise HomeAssistantError(f"Failed to turn on LED: {err}") from err
+
+    async def async_turn_off(self, **kwargs) -> None:
+        """Turn LED off."""
+        try:
+            await self.coordinator.async_set_led_status(False)
+        except Exception as err:
+            _LOGGER.error("Failed to turn off LED: %s", err)
+            raise HomeAssistantError(f"Failed to turn off LED: {err}") from err
+
+
+class PicoSupportsNightModeSwitch(BaseEntity, SwitchEntity):
+    """Diagnostic switch showing if current mode supports night mode."""
+
+    _attr_translation_key = "supports_night_mode"
+    _attr_device_class = SwitchDeviceClass.SWITCH
+
+    def __init__(self, coordinator: MainCoordinator, device_index: int):
+        """Initialize the switch."""
+        super().__init__(coordinator, device_index)
+
+        self._attr_unique_id = f"{DOMAIN}_supports_night_mode_{coordinator.pico_ip.replace('.', '_')}"
+        self._attr_name = "Supports Night Mode"
+
+    @property
+    def is_on(self) -> bool | None:
+        """Return True if current mode supports night mode."""
+        return self.coordinator.supports_night_mode
+
+    async def async_turn_on(self, **kwargs) -> None:
+        """This is a read-only diagnostic switch."""
+        raise HomeAssistantError("This is a diagnostic switch and cannot be controlled")
+
+    async def async_turn_off(self, **kwargs) -> None:
+        """This is a read-only diagnostic switch."""
+        raise HomeAssistantError("This is a diagnostic switch and cannot be controlled")
+
+
+class PicoSupportsTargetHumiditySwitch(BaseEntity, SwitchEntity):
+    """Diagnostic switch showing if current mode supports target humidity."""
+
+    _attr_translation_key = "supports_target_humidity"
+    _attr_device_class = SwitchDeviceClass.SWITCH
+
+    def __init__(self, coordinator: MainCoordinator, device_index: int):
+        """Initialize the switch."""
+        super().__init__(coordinator, device_index)
+
+        self._attr_unique_id = f"{DOMAIN}_supports_target_humidity_{coordinator.pico_ip.replace('.', '_')}"
+        self._attr_name = "Supports Target Humidity"
+
+    @property
+    def is_on(self) -> bool | None:
+        """Return True if current mode supports target humidity."""
+        return self.coordinator.supports_target_humidity
+
+    async def async_turn_on(self, **kwargs) -> None:
+        """This is a read-only diagnostic switch."""
+        raise HomeAssistantError("This is a diagnostic switch and cannot be controlled")
+
+    async def async_turn_off(self, **kwargs) -> None:
+        """This is a read-only diagnostic switch."""
+        raise HomeAssistantError("This is a diagnostic switch and cannot be controlled")
