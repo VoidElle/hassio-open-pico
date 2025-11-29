@@ -16,8 +16,8 @@ This integration took inspiration from:
 - The official [Tecnosystemi](https://play.google.com/store/apps/details?id=it.tecnosystemi.TS&hl=it) mobile application
 - My own reverse engineered POC mobile application [Open Pico](https://github.com/VoidElle/open-pico-app)
 
-> [!CAUTION]
-> **This integration uses cloud polling.** Even though I have developed [open-pico-local-api](https://github.com/VoidElle/open-pico-local-api), Pico's firmware has limitations that makes multiple devices handling not compatible for being implemented in systems like Home Asssistant. Read the API's documentation for more information about it.
+> [!NOTE]
+> **Version 2.0.0+ uses local UDP communication** powered by [open-pico-local-api v2.1.0](https://github.com/VoidElle/open-pico-local-api), which introduces multi-device support via shared transport manager. This eliminates the previous firmware limitation and enables true local control with concurrent device polling!
 
 ## Installation 📦
 ### Via HACS (Recommended) ⭐
@@ -48,16 +48,61 @@ This integration took inspiration from:
 3. Restart Home Assistant
 
 ## Configuration ⚙️
-1. Go to Settings > Devices & Services
-2. Click "Add Integration" and search for "Hassio Open Pico"
-3. Enter your Tecnosystemi account credentials
-4. Enter the PIN common to all devices
+
+The integration is configured via `configuration.yaml`. Add the following to your configuration file:
+```yaml
+# Open Pico Integration
+open_pico:
+
+  # Optional: Enable verbose logging (default: false)
+  verbose: false
+
+  # Required: List of devices
+  devices:
+    - ip: "192.168.8.133"
+      pin: "1234"
+      name: "Living Room"
+
+    - ip: "192.168.8.159"
+      pin: "1234"
+      name: "Bedroom"
+```
+
+### Configuration Options
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `verbose` | No | `false` | Enable detailed logging for debugging |
+| `devices` | Yes | - | List of Pico devices to manage |
+
+### Device Configuration
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `ip` | Yes | Local IP address of the Pico device |
+| `pin` | Yes | Device PIN code (must match device configuration) |
+| `name` | Yes | Friendly name for the device |
+
+### Multiple Devices
+Each Pico device must be listed separately in the `devices` section. The integration automatically handles concurrent communication using shared transport.
+
+**After configuration:**
+1. Save your `configuration.yaml`
+2. Check configuration validity: Developer Tools > YAML > Check Configuration
+3. Restart Home Assistant
+
+## Features ✨
+- 🌐 **Local UDP Communication**: Direct device control without cloud dependency
+- 🔄 **Multi-Device Support**: Control multiple Pico devices simultaneously
+- 📊 **Real-time Monitoring**: Temperature, humidity, CO2, TVOC sensors
+- 🎛️ **Full Control**: Operating modes, fan speed, night mode, LED control
+- 🏷️ **Device Organization**: Use Home Assistant areas for logical grouping
+- ⚡ **Concurrent Polling**: Efficient updates across all devices
 
 ## Limitations ⚠️
 - Support only for Pico devices
-- Single user support only (APIs support only one valid token at a time)
-- No support for plant differentiation - all devices are exposed at the same level; use Home Assistant areas for organization
-- 🚨 PIN must be the same across all Pico devices 🚨
+- Local network access required (devices must be on same network as Home Assistant)
+- Configuration via YAML only (no UI configuration flow yet)
 
 ## Tested On 🧪
 - PICO PRO PLUS 30 **(ACD100052)**
@@ -81,6 +126,10 @@ Contributions are welcome!
 4. Submit a PR with clear description
 
 
-## Work in Progress 🚧
+## Work in progress 🚧
+- [ ] Include the device sensors as entities
+- [ ] Include the possibility to show devices' errors
+- [ ] Include the possibility to reset the maintenance flag when maintenance is performed
+- [ ] UI configuration flow (alternative to YAML)
 - [ ] Custom error messages
 - [ ] Multi-language support (currently Italian and English only)
