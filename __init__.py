@@ -176,34 +176,6 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             )
         )
 
-    # Register services
-    async def handle_reset_idp(call):
-        """Handle the reset_idp service call."""
-        device_ip = call.data.get("device_ip")
-
-        if device_ip:
-            # Reset specific device
-            for coordinator in hass.data[DOMAIN]["coordinators"]:
-                if coordinator.pico_ip == device_ip:
-                    await coordinator.client.reset_idp()
-                    _LOGGER.info("IDP reset for device %s", device_ip)
-                    return
-            _LOGGER.error("Device with IP %s not found", device_ip)
-        else:
-            # Reset all devices
-            for coordinator in hass.data[DOMAIN]["coordinators"]:
-                await coordinator.client.reset_idp()
-            _LOGGER.info("IDP reset for all devices")
-
-    hass.services.async_register(
-        DOMAIN,
-        "reset_idp",
-        handle_reset_idp,
-        schema=vol.Schema({
-            vol.Optional("device_ip"): cv.string,
-        })
-    )
-
     return True
 
 
