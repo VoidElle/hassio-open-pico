@@ -22,6 +22,7 @@ PLATFORMS: list[Platform] = [
     Platform.FAN,
     Platform.SWITCH,
     Platform.SELECT,
+    Platform.SENSOR,
 ]
 
 # Define the device schema
