@@ -31,8 +31,6 @@ async def async_setup_platform(
         switches.extend([
             PicoNightModeSwitch(coordinator, idx),
             PicoLEDStatusSwitch(coordinator, idx),
-            PicoSupportsNightModeSwitch(coordinator, idx),
-            PicoSupportsTargetHumiditySwitch(coordinator, idx),
         ])
 
     async_add_entities(switches)
@@ -93,7 +91,6 @@ class PicoNightModeSwitch(BaseEntity, SwitchEntity):
             _LOGGER.error("Failed to turn off night mode: %s", err)
             raise HomeAssistantError(f"Failed to turn off night mode: {err}") from err
 
-
 class PicoLEDStatusSwitch(BaseEntity, SwitchEntity):
     """Representation of a Pico LED Status Switch."""
 
@@ -130,57 +127,3 @@ class PicoLEDStatusSwitch(BaseEntity, SwitchEntity):
         except Exception as err:
             _LOGGER.error("Failed to turn off LED: %s", err)
             raise HomeAssistantError(f"Failed to turn off LED: {err}") from err
-
-
-class PicoSupportsNightModeSwitch(BaseEntity, SwitchEntity):
-    """Diagnostic switch showing if current mode supports night mode."""
-
-    _attr_translation_key = "supports_night_mode"
-    _attr_device_class = SwitchDeviceClass.SWITCH
-
-    def __init__(self, coordinator: MainCoordinator, device_index: int):
-        """Initialize the switch."""
-        super().__init__(coordinator, device_index)
-
-        self._attr_unique_id = f"{DOMAIN}_supports_night_mode_{coordinator.pico_ip.replace('.', '_')}"
-        self._attr_name = "Supports Night Mode"
-
-    @property
-    def is_on(self) -> bool | None:
-        """Return True if current mode supports night mode."""
-        return self.coordinator.supports_night_mode
-
-    async def async_turn_on(self, **kwargs) -> None:
-        """This is a read-only diagnostic switch."""
-        raise HomeAssistantError("This is a diagnostic switch and cannot be controlled")
-
-    async def async_turn_off(self, **kwargs) -> None:
-        """This is a read-only diagnostic switch."""
-        raise HomeAssistantError("This is a diagnostic switch and cannot be controlled")
-
-
-class PicoSupportsTargetHumiditySwitch(BaseEntity, SwitchEntity):
-    """Diagnostic switch showing if current mode supports target humidity."""
-
-    _attr_translation_key = "supports_target_humidity"
-    _attr_device_class = SwitchDeviceClass.SWITCH
-
-    def __init__(self, coordinator: MainCoordinator, device_index: int):
-        """Initialize the switch."""
-        super().__init__(coordinator, device_index)
-
-        self._attr_unique_id = f"{DOMAIN}_supports_target_humidity_{coordinator.pico_ip.replace('.', '_')}"
-        self._attr_name = "Supports Target Humidity"
-
-    @property
-    def is_on(self) -> bool | None:
-        """Return True if current mode supports target humidity."""
-        return self.coordinator.supports_target_humidity
-
-    async def async_turn_on(self, **kwargs) -> None:
-        """This is a read-only diagnostic switch."""
-        raise HomeAssistantError("This is a diagnostic switch and cannot be controlled")
-
-    async def async_turn_off(self, **kwargs) -> None:
-        """This is a read-only diagnostic switch."""
-        raise HomeAssistantError("This is a diagnostic switch and cannot be controlled")
