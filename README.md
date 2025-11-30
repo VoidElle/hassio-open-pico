@@ -128,5 +128,3 @@ Contributions are welcome!
 - [ ] Include the possibility to show devices' errors (Waiting for maintenance flag to be triggered on my devices)
 - [ ] Include the possibility to reset the maintenance flag when maintenance is performed (Waiting for maintenance flag to be triggered on my devices)
 - [ ] UI configuration flow (alternative to YAML)
-- [ ] Custom error messages
-- [ ] Multi-language support (currently Italian and English only)
