@@ -124,9 +124,9 @@ Contributions are welcome!
 
 
 ## Work in progress 🚧
-- [ ] Include the device sensors as entities
-- [ ] Include the possibility to show devices' errors
-- [ ] Include the possibility to reset the maintenance flag when maintenance is performed
+- [X] Include the device sensors as entities
+- [ ] Include the possibility to show devices' errors (Waiting for maintenance flag to be triggered on my devices)
+- [ ] Include the possibility to reset the maintenance flag when maintenance is performed (Waiting for maintenance flag to be triggered on my devices)
 - [ ] UI configuration flow (alternative to YAML)
 - [ ] Custom error messages
 - [ ] Multi-language support (currently Italian and English only)
