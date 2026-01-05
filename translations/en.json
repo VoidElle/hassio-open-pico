@@ -24,6 +24,25 @@
           }
         }
       }
+    },
+    "select": {
+      "preset_mode": {
+        "name": "Preset Mode",
+        "state": {
+          "heat_recovery": "Heat Recovery",
+          "extraction": "Extraction",
+          "immission": "Immission",
+          "humidity_recovery": "Humidity - Recovery",
+          "humidity_extraction": "Humidity - Extraction",
+          "comfort_summer": "Comfort Summer",
+          "comfort_winter": "Comfort Winter",
+          "co2_recovery": "CO₂ - Recovery",
+          "co2_extraction": "CO₂ - Extraction",
+          "humidity_co2_recovery": "Humidity CO₂ - Recovery",
+          "humidity_co2_extraction": "Humidity CO₂ - Extraction",
+          "natural_ventilation": "Natural Ventilation"
+        }
+      }
     }
   }
 }

@@ -24,6 +24,25 @@
           }
         }
       }
+    },
+    "select": {
+      "preset_mode": {
+        "name": "Modalità Preimpostata",
+        "state": {
+          "heat_recovery": "Recupero di calore",
+          "extraction": "Estrazione",
+          "immission": "Immissione",
+          "humidity_recovery": "Umiditá - Recupero",
+          "humidity_extraction": "Umiditá - Estrazione",
+          "comfort_summer": "Comfort Estate",
+          "comfort_winter": "Comfort Inverno",
+          "co2_recovery": "CO₂ - Recupero",
+          "co2_extraction": "CO₂ - Estrazione",
+          "humidity_co2_recovery": "Umiditá CO₂ - Recupero",
+          "humidity_co2_extraction": "Umiditá CO₂ - Estrazione",
+          "natural_ventilation": "Ventilazione Naturale"
+        }
+      }
     }
   }
 }
