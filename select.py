@@ -8,8 +8,9 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType
 
 from .open_pico_local_api.enums.target_humidity_enum import TargetHumidityEnum
+from .open_pico_local_api.enums.device_mode_enum import DeviceModeEnum
 
-from .const import DOMAIN, TARGET_HUMIDITY_OPTIONS, REVERSED_TARGET_HUMIDITY_OPTIONS
+from .const import DOMAIN, TARGET_HUMIDITY_OPTIONS, REVERSED_TARGET_HUMIDITY_OPTIONS, MODE_INT_TO_PRESET, MODE_PRESET_TO_INT
 from .base import BaseEntity
 from .coordinator import MainCoordinator
 
@@ -27,10 +28,14 @@ async def async_setup_platform(
     # Get all coordinators from hass.data
     coordinators = hass.data[DOMAIN]["coordinators"]
 
-    # Create a target humidity select entity for each coordinator/device
+    # Create select entities for each coordinator/device
     selects = [
-        PicoTargetHumiditySelect(coordinator, idx)
+        entity
         for idx, coordinator in enumerate(coordinators)
+        for entity in [
+            PicoTargetHumiditySelect(coordinator, idx),
+            PicoPresetModeSelect(coordinator, idx)
+        ]
     ]
 
     async_add_entities(selects)
@@ -99,3 +104,52 @@ class PicoTargetHumiditySelect(BaseEntity, SelectEntity):
         except Exception as err:
             _LOGGER.error("Failed to set target humidity: %s", err)
             raise HomeAssistantError(f"Failed to set target humidity: {err}") from err
+
+
+class PicoPresetModeSelect(BaseEntity, SelectEntity):
+    """Representation of a Pico Preset Mode Select."""
+
+    _attr_translation_key = "preset_mode"
+
+    def __init__(self, coordinator: MainCoordinator, device_index: int):
+        """Initialize the select."""
+        super().__init__(coordinator, device_index)
+
+        # Set unique_id based on IP address
+        self._attr_unique_id = f"{DOMAIN}_preset_mode_{coordinator.pico_ip.replace('.', '_')}"
+        self._attr_name = "Preset Mode"
+
+    @property
+    def current_option(self) -> str | None:
+        """Return the current selected option."""
+        if not self.coordinator.data:
+            return None
+
+        # Get the current mode enum value (int)
+        mode_int = int(self.coordinator.current_mode)
+
+        # Convert to preset string
+        return MODE_INT_TO_PRESET.get(mode_int)
+
+    @property
+    def options(self) -> list[str]:
+        """Return the list of available options."""
+        return list(MODE_PRESET_TO_INT.keys())
+
+    async def async_select_option(self, option: str) -> None:
+        """Change the selected option."""
+        if option not in self.options:
+            raise ValueError(f"Invalid mode: {option}")
+
+        # Convert preset mode string to int
+        mode_int = MODE_PRESET_TO_INT.get(option)
+        if mode_int is None:
+            raise ValueError(f"Unknown preset mode: {option}")
+
+        try:
+            # Convert int to DeviceModeEnum
+            mode_enum = DeviceModeEnum(mode_int)
+            await self.coordinator.async_set_mode(mode_enum)
+        except Exception as err:
+            _LOGGER.error("Failed to set preset mode: %s", err)
+            raise HomeAssistantError(f"Failed to set preset mode: {err}") from err
