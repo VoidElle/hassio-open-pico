@@ -44,6 +44,21 @@ This integration took inspiration from:
 2. Move the folder to your `custom_components` directory
 3. Restart Home Assistant
 
+## Add the Integration to Home Assistant 🧩
+
+After installing the integration (via HACS or manually) **and restarting Home Assistant**, you must add it from the UI:
+
+1. Go to **Settings → Devices & Services**
+2. Click **➕ Add Integration**
+3. Search for **“Hassio Open Pico”**
+4. Select it from the list
+5. Go to the **configuration** step below
+
+At this point, Home Assistant will load the integration and apply the configuration defined in `configuration.yaml`.
+
+> ⚠️ **Important**  
+> Even though configuration is YAML-based, this UI step is still required to register the integration inside Home Assistant.
+
 ## Configuration ⚙️
 
 The integration is configured via `configuration.yaml`. Add the following to your configuration file:
@@ -103,6 +118,7 @@ Each Pico device must be listed separately in the `devices` section. The integra
 
 ## Tested On 🧪
 - PICO PRO PLUS 30 **(ACD100052)**
+- PICO PRO PLUS 60 **(ACD100054)**
 
 *Most features should work on all Pico models*
 
