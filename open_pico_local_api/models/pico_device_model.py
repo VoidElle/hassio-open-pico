@@ -64,7 +64,8 @@ class PicoDeviceModel:
             slave_id=data.get("id_slave", 0),
             name=data.get("name", ""),
             has_slave=data.get("has_slave", 0),
-            slave_bitmap=data.get("bmp_slave", 0)
+            slave_bitmap=data.get("bmp_slave", 0),
+            maintenance=data.get("man", [])
         )
 
         sensors = SensorReadingsModel(

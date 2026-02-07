@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import List
 
 
 @dataclass
@@ -16,6 +17,7 @@ class DeviceInfoModel:
     name: str
     has_slave: int
     slave_bitmap: int  # bmp_slave
+    maintenance: List[int] # man
 
     @property
     def firmware_full(self) -> str:
@@ -26,3 +28,14 @@ class DeviceInfoModel:
     def has_datamatrix(self) -> bool:
         """Check if device has valid datamatrix"""
         return self.grid_datamatrix != "NoDataMatrix!!"
+
+    @property
+    def needs_clean_filters_maintenance(self) -> bool:
+        """
+        Indicates whether the device requires filter cleaning / maintenance.
+
+        Based on the maintenance flags array (man).
+        Index 0 is associated with periodical filter maintenance.
+        """
+        manual_flags = self.maintenance or []
+        return len(manual_flags) > 1 and manual_flags[0] == 1

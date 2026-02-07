@@ -18,7 +18,7 @@ from .shared_transport_manager import SharedTransportManager
 from .utils.constants import HUMIDITY_SELECTOR_PRESET_MODES, MODULAR_FAN_SPEED_PRESET_MODES
 
 _LOGGER = logging.getLogger(__name__)
-__version__ = "2.0.0"
+__version__ = "2.1.0"
 
 class PicoClient:
     """
@@ -274,6 +274,45 @@ class PicoClient:
 
         cmd = {
             "s_umd": target_humidity,
+            "cmd": "upd_pico",
+            "frm": "app",
+            "pin": self.pin
+        }
+
+        result = await self._execute_command_with_retry(cmd, retry)
+        return CommandResponseModel.from_dict(result)
+
+    async def reset_maintenance(self, retry: bool = True) -> CommandResponseModel:
+        """
+        Reset maintenance mode on the device.
+
+        Clears the filter maintenance flag (index 0) by sending a reset command
+        for that specific unit.
+        """
+        if not self._connected:
+            raise ConnectionError("Not connected to device")
+
+        # Get current status to get existing maintenance array
+        current_status = await self.get_status(retry=retry)
+        man_status = current_status.device_info.maintenance
+
+        # If maintenance status is not available, we cannot proceed with reset
+        if not man_status or len(man_status) == 0:
+            raise PicoDeviceError("Maintenance status not available in device info")
+
+        # Build man_reset: set to 1 for units that need reset
+        # We only want to reset index 0 (filter maintenance)
+        man_reset = [0] * len(man_status)
+        if man_status[0] == 1:
+            man_reset[0] = 1
+
+        if self.verbose:
+            _LOGGER.debug(f"→ [{self.device_id}] Resetting filter maintenance")
+            _LOGGER.debug(f"  Current man: {man_status}")
+            _LOGGER.debug(f"  Sending man_reset: {man_reset}")
+
+        cmd = {
+            "man_reset": man_reset,
             "cmd": "upd_pico",
             "frm": "app",
             "pin": self.pin
