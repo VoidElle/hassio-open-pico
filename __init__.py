@@ -23,6 +23,8 @@ PLATFORMS: list[Platform] = [
     Platform.SWITCH,
     Platform.SELECT,
     Platform.SENSOR,
+    Platform.BUTTON,
+    Platform.BINARY_SENSOR,
 ]
 
 # Define the device schema
