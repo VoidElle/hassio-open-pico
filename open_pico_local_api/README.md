@@ -8,17 +8,6 @@
 
 **[Features](#-features) • [Installation](#-installation) • [Quick Start](#-quick-start) • [Documentation](#-documentation) • [Examples](#-examples)**
 
-> [!IMPORTANT]
-> **Version 2.0.0 introduces multi-device support!** 🎉
-> 
-> The library now supports **simultaneous control of multiple Pico devices** through a shared transport manager with IDP range allocation. This breakthrough feature enables:
-> - ✅ Multiple devices controlled from a single application
-> - ✅ Concurrent polling without port conflicts
-> - ✅ **Home Assistant compatibility** and integration support
-> - ✅ Automatic IDP synchronization across devices
-
----
-
 ## ✨ Features
 
 ### 🚀 **Performance**
