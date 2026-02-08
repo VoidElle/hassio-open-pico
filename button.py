@@ -43,14 +43,14 @@ class PicoMaintenanceResetButton(BaseEntity, ButtonEntity):
 
     _attr_translation_key = "reset_filter_maintenance"
     _attr_device_class = ButtonDeviceClass.RESTART
-    _attr_icon = "mdi:air-filter"
+    _attr_icon = "mdi:gesture-tap-button"
 
     def __init__(self, coordinator: MainCoordinator, device_index: int):
         """Initialize the button."""
         super().__init__(coordinator, device_index)
 
         self._attr_unique_id = f"{DOMAIN}_reset_maintenance_{coordinator.pico_ip.replace('.', '_')}"
-        self._attr_name = "Reset Filter Maintenance"
+        self._attr_name = "Reset Filter Maintenance Button"
 
     @property
     def available(self) -> bool:
