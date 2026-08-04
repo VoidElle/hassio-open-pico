@@ -1,6 +1,7 @@
 """DataUpdateCoordinator for Polaris 5X devices (local TCP port 1235)."""
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass
 from datetime import timedelta
 import logging
@@ -41,6 +42,8 @@ class PolarisCoordinator(DataUpdateCoordinator[PolarisData]):
         self.client = client
         self.device_name = device_name
         self.polaris_ip = client.ip
+        self._zone_details: dict[int, dict] = {}
+        self._zone_details_fetched = False
 
         super().__init__(
             hass,
@@ -61,6 +64,35 @@ class PolarisCoordinator(DataUpdateCoordinator[PolarisData]):
         """Fetch device + zone data via local TCP."""
         try:
             device, zones = await self.client.async_update()
+
+            # Fetch zone details (serranda/fancoil) on first successful update.
+            # stato_zona returns per-zone data not included in stato_r.
+            # Skips offline zones and uses a 10s timeout to avoid blocking setup.
+            if not self._zone_details_fetched and zones:
+                try:
+                    async with asyncio.timeout(10):
+                        self._zone_details = await self.client.fetch_all_zone_details()
+                    self._zone_details_fetched = True
+                    _LOGGER.info(
+                        "[%s] Fetched zone details for %d zones",
+                        self.device_name, len(self._zone_details),
+                    )
+                except Exception as err:
+                    _LOGGER.warning(
+                        "[%s] Failed to fetch zone details: %s",
+                        self.device_name, err,
+                    )
+                    self._zone_details_fetched = True  # don't retry every poll
+
+            # Merge cached serranda/fancoil data into zones
+            # (stato_r doesn't include these fields)
+            for z in zones:
+                detail = self._zone_details.get(z.zone_id)
+                if detail:
+                    z.serranda = detail.get("shu", -1)
+                    z.serranda_set = detail.get("shu_set", -1)
+                    z.fancoil = detail.get("fan", -1)
+                    z.fancoil_set = detail.get("fan_set", -1)
 
             _LOGGER.debug(
                 "[%s] Polaris update: on=%s, mode=%s, zones=%d",
@@ -179,6 +211,33 @@ class PolarisCoordinator(DataUpdateCoordinator[PolarisData]):
         if zone:
             await self.client.update_zone(zone, **kwargs)
             await self.async_request_refresh()
+
+    async def async_set_zone_serranda(self, zone_id: int, value: int) -> None:
+        """Set serranda (damper) value for a zone.
+
+        Args:
+            zone_id: The zone to update.
+            value: 0=Auto, 1=A1, 2=A2, 3=A3.
+
+        Important: upd_zona requires fan_set and shu_set to be set to the
+        same value. Sending fan_set=-1 causes the Polaris CU to hang.
+        """
+        zone = self._find_zone(zone_id)
+        if zone:
+            await self.client.set_zone_serranda(zone, value)
+            # Update local cache so UI reflects the change immediately
+            if zone_id in self._zone_details:
+                self._zone_details[zone_id]["shu_set"] = value
+                self._zone_details[zone_id]["shu"] = value
+            await asyncio.sleep(2)  # let the CU process before polling
+            await self.async_request_refresh()
+        else:
+            _LOGGER.error("Zone %d not found for serranda update", zone_id)
+
+    @property
+    def zone_details(self) -> dict[int, dict]:
+        """Return cached zone details (from stato_zona)."""
+        return self._zone_details
 
     async def async_shutdown(self) -> None:
         """Shutdown coordinator and disconnect client."""

@@ -43,6 +43,11 @@ _HVAC_TO_CU: dict[HVACMode, tuple[bool, int]] = {
 }
 _CU_TO_HVAC: dict[tuple[bool, int], HVACMode] = {v: k for k, v in _HVAC_TO_CU.items()}
 
+# Serranda (damper) position mapping for swing_mode.
+# Values sent/received via upd_zona fan_set/shu_set fields.
+SERRANDA_OPTIONS = {0: "Auto", 1: "A1", 2: "A2", 3: "A3"}
+SERRANDA_LABEL_TO_VALUE = {v: k for k, v in SERRANDA_OPTIONS.items()}
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -215,6 +220,16 @@ class PolarisZoneClimate(CoordinatorEntity[PolarisCoordinator], ClimateEntity):
         self._coordinator = coordinator
         self._attr_unique_id = f"polaris_{coordinator.serial}_zone_{zone_id}"
 
+        # Enable swing_mode for zones that have a serranda (damper) installed.
+        # Zones without serranda report shu=-1 in stato_zona.
+        detail = coordinator.zone_details.get(zone_id, {})
+        if detail.get("shu", -1) != -1:
+            self._attr_supported_features |= ClimateEntityFeature.SWING_MODE
+            self._attr_swing_modes = list(SERRANDA_OPTIONS.values())
+            self._has_serranda = True
+        else:
+            self._has_serranda = False
+
     @property
     def _zone(self) -> PolarisZone | None:
         if not self.coordinator.data:
@@ -276,10 +291,26 @@ class PolarisZoneClimate(CoordinatorEntity[PolarisCoordinator], ClimateEntity):
 
     @property
     def hvac_action(self) -> HVACAction | None:
+        """Return the current running action based on CU operating mode.
+
+        Previously this always returned IDLE for active zones, which was
+        incorrect. The zone inherits its action from the CU mode.
+        """
         zone = self._zone
         dev = self._device
         if not zone or zone.is_off or (dev and dev.is_off):
             return HVACAction.OFF
+        if not dev:
+            return HVACAction.IDLE
+        mode = _CU_TO_HVAC.get((dev.is_cooling, dev.operating_mode), HVACMode.HEAT)
+        if mode == HVACMode.COOL:
+            return HVACAction.COOLING
+        if mode == HVACMode.HEAT:
+            return HVACAction.HEATING
+        if mode == HVACMode.DRY:
+            return HVACAction.DRYING
+        if mode == HVACMode.FAN_ONLY:
+            return HVACAction.FAN
         return HVACAction.IDLE
 
     async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
@@ -305,6 +336,28 @@ class PolarisZoneClimate(CoordinatorEntity[PolarisCoordinator], ClimateEntity):
         """Turn this zone off (upd_zona is_off=1). Other zones unaffected."""
         _LOGGER.debug("[%s] zone %d turn_off", self._coordinator.device_name, self._zone_id)
         await self._coordinator.async_turn_zone_off(self._zone_id)
+
+    @property
+    def swing_mode(self) -> str | None:
+        """Return current serranda (damper) position."""
+        if not self._has_serranda:
+            return None
+        zone = self._zone
+        if not zone:
+            return None
+        return SERRANDA_OPTIONS.get(zone.serranda_set, "Auto")
+
+    async def async_set_swing_mode(self, swing_mode: str) -> None:
+        """Set serranda (damper) position: Auto, A1, A2, A3."""
+        value = SERRANDA_LABEL_TO_VALUE.get(swing_mode)
+        if value is None:
+            _LOGGER.error("Unknown serranda option: %s", swing_mode)
+            return
+        _LOGGER.debug(
+            "[Polaris] zone %d set_swing_mode: %s (%d)",
+            self._zone_id, swing_mode, value,
+        )
+        await self._coordinator.async_set_zone_serranda(self._zone_id, value)
 
     @callback
     def _handle_coordinator_update(self) -> None:
