@@ -207,10 +207,34 @@ class TestPolarisZoneClimateState:
         polaris_coordinator.data.zones[0].is_off = True
         assert zone_climate.hvac_action == HVACAction.OFF
 
-    def test_hvac_action_idle(self, zone_climate, polaris_coordinator):
+    def test_hvac_action_heating(self, zone_climate, polaris_coordinator):
+        """Zone inherits action from CU mode (default: heat)."""
         polaris_coordinator.data.zones[0].is_off = False
         polaris_coordinator.data.device.is_off = False
-        assert zone_climate.hvac_action == HVACAction.IDLE
+        polaris_coordinator.data.device.is_cooling = False
+        polaris_coordinator.data.device.operating_mode = 0
+        assert zone_climate.hvac_action == HVACAction.HEATING
+
+    def test_hvac_action_cooling(self, zone_climate, polaris_coordinator):
+        polaris_coordinator.data.zones[0].is_off = False
+        polaris_coordinator.data.device.is_off = False
+        polaris_coordinator.data.device.is_cooling = True
+        polaris_coordinator.data.device.operating_mode = 1
+        assert zone_climate.hvac_action == HVACAction.COOLING
+
+    def test_hvac_action_drying(self, zone_climate, polaris_coordinator):
+        polaris_coordinator.data.zones[0].is_off = False
+        polaris_coordinator.data.device.is_off = False
+        polaris_coordinator.data.device.is_cooling = True
+        polaris_coordinator.data.device.operating_mode = 2
+        assert zone_climate.hvac_action == HVACAction.DRYING
+
+    def test_hvac_action_fan(self, zone_climate, polaris_coordinator):
+        polaris_coordinator.data.zones[0].is_off = False
+        polaris_coordinator.data.device.is_off = False
+        polaris_coordinator.data.device.is_cooling = True
+        polaris_coordinator.data.device.operating_mode = 3
+        assert zone_climate.hvac_action == HVACAction.FAN
 
     def test_current_temperature(self, zone_climate, polaris_coordinator):
         polaris_coordinator.data.zones[0].current_temp = 21.0
