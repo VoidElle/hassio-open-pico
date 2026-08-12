@@ -130,7 +130,7 @@ class OpenPicoConfigFlow(ConfigFlow, domain=DOMAIN):
                         "pin": pin,
                         "name": name,
                         "local_port": 40069,
-                        "verbose": False,
+                        "verbose": True,
                     },
                 )
 
@@ -260,7 +260,7 @@ class OpenPicoConfigFlow(ConfigFlow, domain=DOMAIN):
                         "pin": self._scan_pin,
                         "name": name,
                         "local_port": 40069,
-                        "verbose": False,
+                        "verbose": True,
                     },
                 )
 
@@ -337,7 +337,7 @@ class OpenPicoConfigFlow(ConfigFlow, domain=DOMAIN):
                         "pin": pin,
                         "name": name,
                         "scan_interval": scan_interval,
-                        "verbose": False,
+                        "verbose": True,
                     },
                 )
 
@@ -465,7 +465,7 @@ class OpenPicoConfigFlow(ConfigFlow, domain=DOMAIN):
                         "pin": self._scan_pin,
                         "name": name,
                         "scan_interval": scan_interval,
-                        "verbose": False,
+                        "verbose": True,
                     },
                 )
 
