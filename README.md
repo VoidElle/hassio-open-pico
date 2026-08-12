@@ -4,16 +4,16 @@
   <h1>🏠 Open Tecnosystemi</h1>
   <p><em>Home Assistant integration for Tecnosystemi Pico and Polaris 5X devices</em></p>
   <br>
-  <a href="https://github.com/VoidElle/open-pico-local-api"><img src="https://img.shields.io/badge/open--pico--local--api-v2.4.0-blue?style=flat-square&logo=github" alt="open-pico-local-api"></a>
-  <a href="https://github.com/VoidElle/open-polaris-local-api"><img src="https://img.shields.io/badge/open--polaris--local--api-v1.2.0-blue?style=flat-square&logo=github" alt="open-polaris-local-api"></a>
+  <a href="https://github.com/VoidElle/open-pico-local-api"><img src="https://img.shields.io/badge/open--pico--local--api-v2.5.2-blue?style=flat-square&logo=github" alt="open-pico-local-api"></a>
+  <a href="https://github.com/VoidElle/open-polaris-local-api"><img src="https://img.shields.io/badge/open--polaris--local--api-v1.2.2-blue?style=flat-square&logo=github" alt="open-polaris-local-api"></a>
   <a href="https://github.com/VoidElle/hass-open-tecnosystemi/releases"><img src="https://img.shields.io/github/v/release/VoidElle/hass-open-tecnosystemi?style=flat-square&label=version" alt="version"></a>
   <a href="https://github.com/VoidElle/hass-open-tecnosystemi/blob/master/LICENSE"><img src="https://img.shields.io/github/license/VoidElle/hass-open-tecnosystemi?style=flat-square" alt="license"></a>
   <br>
-  <a href="https://hacs.xyz"><img src="https://img.shields.io/badge/HACS-Custom-orange?style=flat-square&logo=home-assistant-community-store" alt="HACS"></a>
+  <a href="https://hacs.xyz"><img src="https://img.shields.io/badge/HACS-Default-41BDF5?style=flat-square&logo=home-assistant-community-store" alt="HACS"></a>
   <a href="https://www.home-assistant.io/"><img src="https://img.shields.io/badge/Home%20Assistant-%E2%89%A52024.1-41BDF5?style=flat-square&logo=home-assistant" alt="Home Assistant"></a>
   <a href="https://github.com/VoidElle/hass-open-tecnosystemi/stargazers"><img src="https://img.shields.io/github/stars/VoidElle/hass-open-tecnosystemi?style=flat-square" alt="stars"></a>
   <a href="https://github.com/VoidElle/hass-open-tecnosystemi/commits"><img src="https://img.shields.io/github/last-commit/VoidElle/hass-open-tecnosystemi?style=flat-square" alt="last commit"></a>
-  <a href="https://github.com/VoidElle/hass-open-ialarm-mk-7/actions/workflows/tests.yml"><img src="https://img.shields.io/github/actions/workflow/status/VoidElle/hass-open-ialarm-mk-7/tests.yml?style=flat-square&label=tests" alt="tests"></a>
+  <a href="https://github.com/VoidElle/hass-open-tecnosystemi/actions/workflows/tests.yml"><img src="https://img.shields.io/github/actions/workflow/status/VoidElle/hass-open-tecnosystemi/tests.yml?style=flat-square&label=tests" alt="tests"></a>
 </div>
 
 
@@ -27,26 +27,17 @@ Both device families communicate **entirely over your local network**, requiring
 
 ## Installation 📦
 ### Via HACS (Recommended) ⭐
+Open Tecnosystemi is available in the **HACS Default** repository - no custom repository needed.
+
 [![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=VoidElle&repository=hass-open-tecnosystemi&category=integration)
 
-### Via HACS (Manual)
-1. Add custom repository:
-    - Open HACS in your Home Assistant interface
-    - Go to "Integrations" tab
-    - Click on the three dots in the top right corner and select "Custom repositories"
-    - Enter the repository URL: `https://github.com/VoidElle/hass-open-tecnosystemi`
-    - Select "Integration" as the category
-    - Click "Add"
-
-
-2. Install the integration:
-   - In HACS Integrations, click + Explore & Download Repositories
-   - Search for "Open Tecnosystemi"
-   - Click on the integration and then Download
-   - Select the latest version and click Download
-
-
-3. Restart Home Assistant 🔄
+1. Open HACS in your Home Assistant interface
+2. Go to "Integrations" tab
+3. Click **+ Explore & Download Repositories**
+4. Search for "Open Tecnosystemi"
+5. Click on the integration and then Download
+6. Select the latest version and click Download
+7. Restart Home Assistant 🔄
 
 ### Manual Installation 🔧
 1. Copy the repository content inside a folder called `hass_open_tecnosystemi`
@@ -66,7 +57,7 @@ After installing (via HACS or manually) and restarting Home Assistant:
 
 ## Configuration ⚙️
 
-All configuration is done through the Home Assistant UI — no `configuration.yaml` editing required.
+All configuration is done through the Home Assistant UI - no `configuration.yaml` editing required.
 
 ### Auto-scan
 
