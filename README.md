@@ -143,16 +143,6 @@ You can also change log levels at runtime without restarting HA via **Developer 
 
 *Most features should work on all Pico and Polaris models*
 
-## Compatible Firmware (MK7) 📡
-
-| Firmware | Status |
-|---|---|
-| V1.0.9F_SIA_TCP (04/09/2025) | ✅ Confirmed compatible |
-| V1.05F_SIA_TCP | ❌ Not compatible |
-| V1.13F (12/08/2026) | ❌ Not compatible |
-
-General rule: if the MK7 exposes an open TCP port 8000, it should be compatible.
-
 ## Contributing 🤝
 
 Contributions are welcome! 
